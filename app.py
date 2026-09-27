@@ -1,14 +1,24 @@
 from flask import Flask
 from config import Config
 from extensions import db
-from models import User, Student
+from models import User, Student, Company, PlacementDrive, Application, CompanyUpdate
 from routes.auth import auth_bp
+from routes.company import company_bp
+from routes.placement_drive import drive_bp
+from routes.application import application_bp
+from routes.student import student_bp
+from routes.company_update import update_bp
 
 app = Flask(__name__)
 app.config.from_object(Config)
 
 db.init_app(app)
 app.register_blueprint(auth_bp, url_prefix='/api/auth')
+app.register_blueprint(company_bp, url_prefix='/api/companies')
+app.register_blueprint(drive_bp, url_prefix='/api/drives')
+app.register_blueprint(application_bp, url_prefix='/api/applications')
+app.register_blueprint(student_bp, url_prefix='/api/students')
+app.register_blueprint(update_bp, url_prefix='/api/updates')
 
 @app.route('/')
 def home():
