@@ -4,3 +4,9 @@ from .company import Company
 from .placement_drive import PlacementDrive
 from .application import Application
 from .company_update import CompanyUpdate
+from .interview_experience import InterviewExperience
+from .interview_round import InterviewRound
+from .interview_question import InterviewQuestion
+from .student_answer import StudentAnswer
+from .interview_skill import InterviewSkill
+from .preparation_resource import PreparationResource
