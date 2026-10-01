@@ -9,6 +9,7 @@ from routes.application import application_bp
 from routes.student import student_bp
 from routes.company_update import update_bp
 from routes.interview import interview_bp
+from routes.interview_intelligence import intelligence_bp
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -21,6 +22,7 @@ app.register_blueprint(application_bp, url_prefix='/api/applications')
 app.register_blueprint(student_bp, url_prefix='/api/students')
 app.register_blueprint(update_bp, url_prefix='/api/updates')
 app.register_blueprint(interview_bp, url_prefix='/api/interviews')
+app.register_blueprint(intelligence_bp, url_prefix='/api/intelligence')
 
 @app.route('/')
 def home():
