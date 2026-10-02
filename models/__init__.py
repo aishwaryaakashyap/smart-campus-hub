@@ -10,3 +10,5 @@ from .interview_question import InterviewQuestion
 from .student_answer import StudentAnswer
 from .interview_skill import InterviewSkill
 from .preparation_resource import PreparationResource
+from .skill import Skill
+from .student_skill import StudentSkill
