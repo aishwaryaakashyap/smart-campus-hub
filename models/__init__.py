@@ -12,3 +12,5 @@ from .interview_skill import InterviewSkill
 from .preparation_resource import PreparationResource
 from .skill import Skill
 from .student_skill import StudentSkill
+from .grievance_category import GrievanceCategory
+from .grievance import Grievance
