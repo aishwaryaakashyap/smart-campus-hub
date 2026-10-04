@@ -1,4 +1,4 @@
-from flask import Blueprint, jsonify, session
+from flask import Blueprint, jsonify, session, render_template
 from models import Company, PlacementDrive, Application, Student
 
 analytics_bp = Blueprint('analytics', __name__)
@@ -96,5 +96,10 @@ def placement_analytics():
         'selection_rate_percent': selection_rate,
         'company_analytics': company_analytics
     }), 200
+
+
+@analytics_bp.route('/dashboard', methods=['GET'])
+def analytics_dashboard():
+    return render_template('analytics.html')
 
 

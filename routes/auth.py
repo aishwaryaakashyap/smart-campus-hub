@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify, session
+from flask import Blueprint, request, jsonify, session, render_template
 from extensions import db
 from models import User, Student
 
@@ -81,3 +81,7 @@ def me():
         'email': user.email,
         'role': user.role
     }), 200
+
+@auth_bp.route('/login-page', methods=['GET'])
+def login_page():
+    return render_template('login.html')
