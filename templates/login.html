@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Campus Hub - Login</title>
+</head>
+
+<body>
+    <h1>Smart Campus Hub</h1>
+    <h2>Login</h2>
+
+    <form id="loginForm">
+        <label>Email:</label><br>
+        <input type="email" id="email" required><br><br>
+
+        <label>Password:</label><br>
+        <input type="password" id="password" required><br><br>
+
+        <button type="submit">Login</button>
+    </form>
+
+    <p id="message"></p>
+
+    <script>
+        document.getElementById("loginForm").addEventListener("submit", async function(event) {
+            event.preventDefault();
+
+            const email = document.getElementById("email").value;
+            const password = document.getElementById("password").value;
+
+            const response = await fetch("/api/auth/login", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    email: email,
+                    password: password
+                })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                document.getElementById("message").innerText = "Login successful!";
+
+                if (data.role === "coordinator") {
+                    window.location.href = "/api/analytics/dashboard";
+                } else {
+                    document.getElementById("message").innerText =
+                        "Logged in, but this dashboard is for coordinators.";
+                }
+            } else {
+                document.getElementById("message").innerText =
+                    data.error || "Login failed.";
+            }
+        });
+    </script>
+</body>
+</html>
