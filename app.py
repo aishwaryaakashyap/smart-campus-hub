@@ -12,6 +12,7 @@ from routes.interview import interview_bp
 from routes.interview_intelligence import intelligence_bp
 from routes.skill import skill_bp
 from routes.analytics import analytics_bp
+from routes.skill_gap import skill_gap_bp
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -27,6 +28,7 @@ app.register_blueprint(interview_bp, url_prefix='/api/interviews')
 app.register_blueprint(intelligence_bp, url_prefix='/api/intelligence')
 app.register_blueprint(skill_bp, url_prefix='/api/skills')
 app.register_blueprint(analytics_bp, url_prefix='/api/analytics')
+app.register_blueprint(skill_gap_bp, url_prefix='/api/skill-gap')
 
 @app.route('/')
 def home():
