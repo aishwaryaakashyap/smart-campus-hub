@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, render_template
 from config import Config
 from extensions import db
 from models import User, Student, Company, PlacementDrive, Application, CompanyUpdate, InterviewExperience, InterviewRound, InterviewQuestion, StudentAnswer, InterviewSkill, PreparationResource, Skill, StudentSkill
@@ -33,6 +33,12 @@ app.register_blueprint(skill_gap_bp, url_prefix='/api/skill-gap')
 @app.route('/')
 def home():
     return '<h1>Smart Campus Hub</h1><p>Flask + Database connected!</p>'
+
+
+@app.route('/skill-gap')
+def skill_gap_page():
+    return render_template('skill_gap.html')
+
 
 if __name__ == '__main__':
     with app.app_context():
