@@ -1,7 +1,7 @@
 
 from flask import Blueprint, request, jsonify, session
 from extensions import db
-from models import Grievance, GrievanceCategory, Student
+from models import Grievance, GrievanceCategory, GrievanceUpdate, Student
 
 grievance_bp = Blueprint('grievance', __name__)
 
@@ -83,12 +83,16 @@ def submit_grievance():
             'error': 'Priority must be Low, Medium, or High'
         }), 400
 
+    location = data.get('location')
+    if location is not None and not isinstance(location, str):
+        return jsonify({'error': 'Location must be text'}), 400
+
     grievance = Grievance(
         student_id=student.id,
         category_id=category.id,
         title=title.strip(),
         description=description.strip(),
-        location=data.get('location'),
+        location=location.strip() if location else None,
         priority=priority,
         status='Submitted'
     )
@@ -157,3 +161,184 @@ def get_grievance(grievance_id):
         'updated_at': grievance.updated_at.isoformat()
         if grievance.updated_at else None
     }), 200
+
+
+@grievance_bp.route('/manage', methods=['GET'])
+def manage_grievances():
+    user_id = session.get('user_id')
+    role = session.get('role')
+
+    if not user_id:
+        return jsonify({'error': 'Not logged in'}), 401
+
+    if role not in ('coordinator', 'advisor'):
+        return jsonify({
+            'error': 'Only coordinators and advisors can access this endpoint'
+        }), 403
+
+    query = Grievance.query
+
+    if role == 'advisor':
+        query = query.filter_by(assigned_to=user_id)
+
+    grievances = query.order_by(
+        Grievance.created_at.desc()
+    ).all()
+
+    return jsonify([
+        {
+            'id': grievance.id,
+            'title': grievance.title,
+            'description': grievance.description,
+            'student_id': grievance.student_id,
+            'category': grievance.category.name,
+            'priority': grievance.priority,
+            'status': grievance.status,
+            'assigned_to': grievance.assigned_to,
+            'created_at': grievance.created_at.isoformat()
+        }
+        for grievance in grievances
+    ]), 200
+
+
+@grievance_bp.route('/<int:grievance_id>/assign', methods=['PUT'])
+def assign_grievance(grievance_id):
+    user_id = session.get('user_id')
+    role = session.get('role')
+
+    if not user_id:
+        return jsonify({'error': 'Not logged in'}), 401
+
+    if role != 'coordinator':
+        return jsonify({
+            'error': 'Only coordinators can assign grievances'
+        }), 403
+
+    data = request.get_json(silent=True) or {}
+    advisor_id = data.get('advisor_id')
+
+    try:
+        advisor_id = int(advisor_id)
+    except (TypeError, ValueError):
+        return jsonify({'error': 'A valid advisor_id is required'}), 400
+
+    grievance = db.session.get(Grievance, grievance_id)
+
+    if not grievance:
+        return jsonify({'error': 'Grievance not found'}), 404
+
+    from models import User
+
+    advisor = db.session.get(User, advisor_id)
+
+    if not advisor or advisor.role != 'advisor':
+        return jsonify({'error': 'The selected user is not an advisor'}), 400
+
+    grievance.assigned_to = advisor.id
+    db.session.commit()
+
+    return jsonify({
+        'message': 'Grievance assigned successfully',
+        'grievance_id': grievance.id,
+        'advisor_id': advisor.id
+    }), 200
+
+
+@grievance_bp.route('/<int:grievance_id>/status', methods=['PUT'])
+def update_grievance_status(grievance_id):
+    user_id = session.get('user_id')
+    role = session.get('role')
+
+    if not user_id:
+        return jsonify({'error': 'Not logged in'}), 401
+
+    if role not in ('coordinator', 'advisor'):
+        return jsonify({
+            'error': 'Only coordinators and advisors can update status'
+        }), 403
+
+    data = request.get_json(silent=True) or {}
+    new_status = data.get('status')
+
+    allowed_statuses = (
+        'Submitted',
+        'Under Review',
+        'In Progress',
+        'Resolved',
+        'Rejected'
+    )
+
+    if not isinstance(new_status, str) or new_status not in allowed_statuses:
+        return jsonify({
+            'error': 'Invalid status',
+            'allowed_statuses': list(allowed_statuses)
+        }), 400
+
+    grievance = db.session.get(Grievance, grievance_id)
+
+    if not grievance:
+        return jsonify({'error': 'Grievance not found'}), 404
+
+    if role == 'advisor' and grievance.assigned_to != user_id:
+        return jsonify({
+            'error': 'You can update only grievances assigned to you'
+        }), 403
+
+    old_status = grievance.status
+
+    if old_status == new_status:
+        return jsonify({
+            'message': 'Grievance already has this status',
+            'grievance_id': grievance.id,
+            'status': grievance.status
+        }), 200
+
+    comment = data.get('comment')
+    if comment is not None and not isinstance(comment, str):
+        return jsonify({'error': 'Comment must be text'}), 400
+
+    history = GrievanceUpdate(
+        grievance_id=grievance.id,
+        updated_by=user_id,
+        old_status=old_status,
+        new_status=new_status,
+        comment=comment.strip() if comment else None
+    )
+
+    grievance.status = new_status
+    db.session.add(history)
+    db.session.commit()
+
+    return jsonify({
+        'message': 'Grievance status updated successfully',
+        'grievance_id': grievance.id,
+        'old_status': old_status,
+        'status': grievance.status
+    }), 200
+
+    
+@grievance_bp.route('/<int:grievance_id>/history', methods=['GET'])
+def get_grievance_history(grievance_id):
+    student, error = require_student()
+    if error:
+        return error
+
+    grievance = db.session.get(Grievance, grievance_id)
+
+    if not grievance or grievance.student_id != student.id:
+        return jsonify({'error': 'Grievance not found'}), 404
+
+    updates = GrievanceUpdate.query.filter_by(
+        grievance_id=grievance.id
+    ).order_by(GrievanceUpdate.created_at.asc()).all()
+
+    return jsonify([
+        {
+            'old_status': update.old_status,
+            'new_status': update.new_status,
+            'comment': update.comment,
+            'created_at': update.created_at.isoformat(),
+            'updated_by': update.updated_by
+        }
+        for update in updates
+    ]), 200
