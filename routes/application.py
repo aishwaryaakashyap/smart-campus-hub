@@ -1,25 +1,45 @@
+
 from flask import Blueprint, request, jsonify, session
 from extensions import db
 from models import Application, Student, PlacementDrive
 from services.eligibility import check_eligibility
+from services.notifications import create_notification
 
 application_bp = Blueprint('application', __name__)
 
 
 def require_student():
     if 'user_id' not in session:
-        return None, (jsonify({'error': 'Not logged in'}), 401)
-    if session.get('role') != 'student':
-        return None, (jsonify({'error': 'Only students can perform this action'}), 403)
+        return None, (
+            jsonify({'error': 'Not logged in'}),
+            401
+        )
 
-    student = Student.query.filter_by(user_id=session['user_id']).first()
+    if session.get('role') != 'student':
+        return None, (
+            jsonify({'error': 'Only students can perform this action'}),
+            403
+        )
+
+    student = Student.query.filter_by(
+        user_id=session['user_id']
+    ).first()
+
     if not student:
-        return None, (jsonify({'error': 'Student profile not found. Complete your profile first.'}), 404)
+        return None, (
+            jsonify({
+                'error': 'Student profile not found. Complete your profile first.'
+            }),
+            404
+        )
 
     return student, None
 
 
-@application_bp.route('/check-eligibility/<int:drive_id>', methods=['GET'])
+@application_bp.route(
+    '/check-eligibility/<int:drive_id>',
+    methods=['GET']
+)
 def check_eligibility_route(drive_id):
     student, error = require_student()
     if error:
@@ -45,7 +65,8 @@ def apply():
     if error:
         return error
 
-    data = request.get_json()
+    data = request.get_json(silent=True) or {}
+
     if 'drive_id' not in data:
         return jsonify({'error': 'drive_id is required'}), 400
 
@@ -56,19 +77,30 @@ def apply():
     if drive.status != 'Open':
         return jsonify({'error': 'This placement drive is closed'}), 400
 
-    existing = Application.query.filter_by(student_id=student.id, drive_id=drive.id).first()
+    existing = Application.query.filter_by(
+        student_id=student.id,
+        drive_id=drive.id
+    ).first()
+
     if existing:
-        return jsonify({'error': 'You have already applied to this drive'}), 409
+        return jsonify({
+            'error': 'You have already applied to this drive'
+        }), 409
 
     is_eligible, reasons = check_eligibility(student, drive)
+
     if not is_eligible:
-        return jsonify({'error': 'You are not eligible for this drive', 'reasons': reasons}), 403
+        return jsonify({
+            'error': 'You are not eligible for this drive',
+            'reasons': reasons
+        }), 403
 
     new_application = Application(
         student_id=student.id,
         drive_id=drive.id,
         status='Applied'
     )
+
     db.session.add(new_application)
     db.session.commit()
 
@@ -85,38 +117,89 @@ def my_applications():
     if error:
         return error
 
-    applications = Application.query.filter_by(student_id=student.id).all()
+    applications = Application.query.filter_by(
+        student_id=student.id
+    ).all()
+
     result = []
-    for a in applications:
+
+    for application in applications:
         result.append({
-            'application_id': a.id,
-            'company_name': a.drive.company.name,
-            'job_role': a.drive.job_role,
-            'status': a.status,
-            'applied_date': str(a.applied_date)
+            'application_id': application.id,
+            'company_name': application.drive.company.name,
+            'job_role': application.drive.job_role,
+            'status': application.status,
+            'applied_date': str(application.applied_date)
         })
+
     return jsonify(result), 200
 
 
-@application_bp.route('/<int:application_id>/status', methods=['PUT'])
+@application_bp.route(
+    '/<int:application_id>/status',
+    methods=['PUT']
+)
 def update_status(application_id):
     if 'user_id' not in session:
         return jsonify({'error': 'Not logged in'}), 401
+
     if session.get('role') != 'coordinator':
-        return jsonify({'error': 'Only coordinators can perform this action'}), 403
+        return jsonify({
+            'error': 'Only coordinators can perform this action'
+        }), 403
 
     application = Application.query.get(application_id)
+
     if not application:
         return jsonify({'error': 'Application not found'}), 404
 
-    data = request.get_json()
-    valid_statuses = ['Applied', 'Under Review', 'Shortlisted', 'Interview', 'Selected', 'Not Selected', 'Withdrawn']
+    data = request.get_json(silent=True) or {}
 
-    if 'status' not in data or data['status'] not in valid_statuses:
-        return jsonify({'error': f'status must be one of {valid_statuses}'}), 400
+    valid_statuses = [
+        'Applied',
+        'Under Review',
+        'Shortlisted',
+        'Interview',
+        'Selected',
+        'Not Selected',
+        'Withdrawn'
+    ]
 
-    application.status = data['status']
-    application.remarks = data.get('remarks', application.remarks)
-    db.session.commit()
+    if (
+        'status' not in data
+        or data['status'] not in valid_statuses
+    ):
+        return jsonify({
+            'error': f'status must be one of {valid_statuses}'
+        }), 400
 
-    return jsonify({'message': 'Application status updated successfully'}), 200
+    old_status = application.status
+    new_status = data['status']
+
+    application.status = new_status
+    application.remarks = data.get(
+        'remarks',
+        application.remarks
+    )
+
+    try:
+        if old_status != new_status:
+            create_notification(
+                user_id=application.student.user_id,
+                title='Placement Application Update',
+                message=(
+                    f'Your application for {application.drive.job_role} '
+                    f'has been updated from {old_status} to {new_status}.'
+                ),
+                notification_type='placement_status'
+            )
+
+        db.session.commit()
+
+    except Exception:
+        db.session.rollback()
+        raise
+
+    return jsonify({
+        'message': 'Application status updated successfully'
+    }), 200

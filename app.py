@@ -1,7 +1,25 @@
-from flask import Flask
+
+from flask import Flask, render_template
 from config import Config
 from extensions import db
-from models import User, Student, Company, PlacementDrive, Application, CompanyUpdate, InterviewExperience, InterviewRound, InterviewQuestion, StudentAnswer, InterviewSkill, PreparationResource, Skill, StudentSkill
+
+from models import (
+    User,
+    Student,
+    Company,
+    PlacementDrive,
+    Application,
+    CompanyUpdate,
+    InterviewExperience,
+    InterviewRound,
+    InterviewQuestion,
+    StudentAnswer,
+    InterviewSkill,
+    PreparationResource,
+    Skill,
+    StudentSkill,
+)
+
 from routes.company import company_bp
 from routes.auth import auth_bp
 from routes.placement_drive import drive_bp
@@ -12,12 +30,15 @@ from routes.interview import interview_bp
 from routes.interview_intelligence import intelligence_bp
 from routes.skill import skill_bp
 from routes.analytics import analytics_bp
+from routes.skill_gap import skill_gap_bp
 from routes.grievance import grievance_bp
+from routes.notifications import notifications_bp
 
 app = Flask(__name__)
 app.config.from_object(Config)
 
 db.init_app(app)
+
 app.register_blueprint(auth_bp, url_prefix='/api/auth')
 app.register_blueprint(company_bp, url_prefix='/api/companies')
 app.register_blueprint(drive_bp, url_prefix='/api/drives')
@@ -28,14 +49,23 @@ app.register_blueprint(interview_bp, url_prefix='/api/interviews')
 app.register_blueprint(intelligence_bp, url_prefix='/api/intelligence')
 app.register_blueprint(skill_bp, url_prefix='/api/skills')
 app.register_blueprint(analytics_bp, url_prefix='/api/analytics')
+app.register_blueprint(skill_gap_bp, url_prefix='/api/skill-gap')
 app.register_blueprint(grievance_bp, url_prefix='/api/grievances')
+app.register_blueprint(notifications_bp, url_prefix='/api/notifications')
 
-@app.route('/')
-def home():
-    return '<h1>Smart Campus Hub</h1><p>Flask + Database connected!</p>'
+
+@app.route('/skill-gap')
+def skill_gap_page():
+    return render_template('skill_gap.html')
+
 
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
         print("Database tables created successfully!")
-    app.run(debug=True, host='0.0.0.0', port=5000)
+
+    app.run(
+        debug=True,
+        host='0.0.0.0',
+        port=5000
+    )

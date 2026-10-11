@@ -1,3 +1,4 @@
+
 from .user import User
 from .student import Student
 from .company import Company
@@ -14,3 +15,4 @@ from .skill import Skill
 from .student_skill import StudentSkill
 from .grievance_category import GrievanceCategory
 from .grievance import Grievance, GrievanceUpdate
+from .notification import Notification
