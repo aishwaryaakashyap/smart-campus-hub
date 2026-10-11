@@ -1,7 +1,7 @@
 
 from flask import Blueprint, jsonify, session
 from extensions import db
-from models import Notification
+from models import Notification, User
 
 notifications_bp = Blueprint('notifications', __name__)
 
@@ -9,6 +9,10 @@ notifications_bp = Blueprint('notifications', __name__)
 @notifications_bp.route('/', methods=['GET'])
 def list_notifications():
     if 'user_id' not in session:
+        return jsonify({'error': 'Not logged in'}), 401
+
+    if not db.session.get(User, session['user_id']):
+        session.clear()
         return jsonify({'error': 'Not logged in'}), 401
 
     notifications = (
@@ -34,6 +38,10 @@ def list_notifications():
 @notifications_bp.route('/<int:notification_id>/read', methods=['PUT'])
 def mark_notification_read(notification_id):
     if 'user_id' not in session:
+        return jsonify({'error': 'Not logged in'}), 401
+
+    if not db.session.get(User, session['user_id']):
+        session.clear()
         return jsonify({'error': 'Not logged in'}), 401
 
     notification = Notification.query.filter_by(
