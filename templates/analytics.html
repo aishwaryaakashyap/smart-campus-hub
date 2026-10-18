@@ -424,16 +424,17 @@
 
                 const row = document.createElement('tr');
 
-                row.innerHTML = `
-                    <td>${company.company_name}</td>
-                    <td>${company.drive_count}</td>
-                    <td>${company.application_count}</td>
-                    <td>${company.selected_count}</td>
-                    <td>${company.selection_rate_percent}%</td>
-                `;
-
-                companyTable.appendChild(row);
-            });
+                               [
+                    company.company_name,
+                    company.drive_count,
+                    company.application_count,
+                    company.selected_count,
+                    company.selection_rate_percent + '%'
+                ].forEach(value => {
+                    const cell = document.createElement('td');
+                    cell.textContent = value ?? '';
+                    row.appendChild(cell);
+                });
 
         })
 
@@ -519,11 +520,13 @@
 
                 const row = document.createElement('tr');
 
-                row.innerHTML = `
-                    <td>${item.question}</td>
-                    <td>${item.times_mentioned}</td>
-                `;
+                                const questionCell = document.createElement('td');
+                questionCell.textContent = item.question ?? '';
+                row.appendChild(questionCell);
 
+                const countCell = document.createElement('td');
+                countCell.textContent = item.times_mentioned ?? '';
+                row.appendChild(countCell);
                 questionTable.appendChild(row);
             });
 
@@ -537,11 +540,13 @@
 
                 const row = document.createElement('tr');
 
-                row.innerHTML = `
-                    <td>${item.skill}</td>
-                    <td>${item.times_mentioned}</td>
-                `;
+                                const skillCell = document.createElement('td');
+                skillCell.textContent = item.skill ?? '';
+                row.appendChild(skillCell);
 
+                const countCell = document.createElement('td');
+                countCell.textContent = item.times_mentioned ?? '';
+                row.appendChild(countCell);
                 interviewSkillTable.appendChild(row);
             });
 
