@@ -1,7 +1,16 @@
 
 from flask import Blueprint, request, jsonify, session
+
 from extensions import db
-from models import Grievance, GrievanceCategory, GrievanceUpdate, Student
+from models import (
+    Grievance,
+    GrievanceCategory,
+    GrievanceUpdate,
+    Student,
+    User,
+)
+from services.notifications import create_notification
+
 
 grievance_bp = Blueprint('grievance', __name__)
 
@@ -61,7 +70,9 @@ def submit_grievance():
         return jsonify({'error': 'Title is required'}), 400
 
     if len(title.strip()) > 200:
-        return jsonify({'error': 'Title must be 200 characters or fewer'}), 400
+        return jsonify({
+            'error': 'Title must be 200 characters or fewer'
+        }), 400
 
     if not isinstance(description, str) or not description.strip():
         return jsonify({'error': 'Description is required'}), 400
@@ -74,7 +85,9 @@ def submit_grievance():
     category = db.session.get(GrievanceCategory, category_id)
 
     if not category or not category.is_active:
-        return jsonify({'error': 'Invalid or inactive grievance category'}), 400
+        return jsonify({
+            'error': 'Invalid or inactive grievance category'
+        }), 400
 
     priority = data.get('priority', 'Medium')
 
@@ -84,6 +97,7 @@ def submit_grievance():
         }), 400
 
     location = data.get('location')
+
     if location is not None and not isinstance(location, str):
         return jsonify({'error': 'Location must be text'}), 400
 
@@ -98,6 +112,21 @@ def submit_grievance():
     )
 
     db.session.add(grievance)
+    db.session.flush()
+
+    coordinators = User.query.filter_by(role='coordinator').all()
+
+    for coordinator in coordinators:
+        create_notification(
+            user_id=coordinator.id,
+            title='New Grievance Submitted',
+            message=(
+                f'A new grievance "{grievance.title}" '
+                f'has been submitted.'
+            ),
+            notification_type='grievance'
+        )
+
     db.session.commit()
 
     return jsonify({
@@ -227,14 +256,25 @@ def assign_grievance(grievance_id):
     if not grievance:
         return jsonify({'error': 'Grievance not found'}), 404
 
-    from models import User
-
     advisor = db.session.get(User, advisor_id)
 
     if not advisor or advisor.role != 'advisor':
-        return jsonify({'error': 'The selected user is not an advisor'}), 400
+        return jsonify({
+            'error': 'The selected user is not an advisor'
+        }), 400
 
     grievance.assigned_to = advisor.id
+
+    create_notification(
+        user_id=advisor.id,
+        title='Grievance Assigned to You',
+        message=(
+            f'Grievance "{grievance.title}" '
+            f'has been assigned to you.'
+        ),
+        notification_type='grievance'
+    )
+
     db.session.commit()
 
     return jsonify({
@@ -294,6 +334,7 @@ def update_grievance_status(grievance_id):
         }), 200
 
     comment = data.get('comment')
+
     if comment is not None and not isinstance(comment, str):
         return jsonify({'error': 'Comment must be text'}), 400
 
@@ -307,6 +348,26 @@ def update_grievance_status(grievance_id):
 
     grievance.status = new_status
     db.session.add(history)
+
+    if new_status == 'Resolved':
+        notification_title = 'Grievance Resolved'
+        notification_message = (
+            f'Your grievance "{grievance.title}" has been resolved.'
+        )
+    else:
+        notification_title = 'Grievance Status Updated'
+        notification_message = (
+            f'Your grievance "{grievance.title}" status changed '
+            f'from "{old_status}" to "{new_status}".'
+        )
+
+    create_notification(
+        user_id=grievance.student.user_id,
+        title=notification_title,
+        message=notification_message,
+        notification_type='grievance'
+    )
+
     db.session.commit()
 
     return jsonify({
@@ -316,7 +377,7 @@ def update_grievance_status(grievance_id):
         'status': grievance.status
     }), 200
 
-    
+
 @grievance_bp.route('/<int:grievance_id>/history', methods=['GET'])
 def get_grievance_history(grievance_id):
     student, error = require_student()
