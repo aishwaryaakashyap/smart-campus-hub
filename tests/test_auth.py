@@ -8,6 +8,7 @@ class AuthRegistrationTests(unittest.TestCase):
 
     def setUp(self):
         app.config['TESTING'] = True
+        app.config['WTF_CSRF_ENABLED'] = False
         self.client = app.test_client()
 
     def test_rejects_privileged_role(self):
@@ -98,6 +99,7 @@ class AuthLoginTests(unittest.TestCase):
 
     def setUp(self):
         app.config['TESTING'] = True
+        app.config['WTF_CSRF_ENABLED'] = False
         self.client = app.test_client()
 
     def test_rejects_missing_password(self):
