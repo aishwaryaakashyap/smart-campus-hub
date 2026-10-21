@@ -1,5 +1,8 @@
+import os
 
 from flask import Flask, render_template
+from flask_wtf.csrf import CSRFProtect
+
 from config import Config
 from extensions import db
 
@@ -34,11 +37,16 @@ from routes.skill_gap import skill_gap_bp
 from routes.grievance import grievance_bp
 from routes.notifications import notifications_bp
 
+
 app = Flask(__name__)
 app.config.from_object(Config)
 
+# Enable CSRF protection for state-changing requests.
+csrf = CSRFProtect(app)
+
 db.init_app(app)
 
+# Register application blueprints.
 app.register_blueprint(auth_bp, url_prefix='/api/auth')
 app.register_blueprint(company_bp, url_prefix='/api/companies')
 app.register_blueprint(drive_bp, url_prefix='/api/drives')
@@ -65,7 +73,7 @@ if __name__ == '__main__':
         print("Database tables created successfully!")
 
     app.run(
-        debug=True,
-        host='0.0.0.0',
+        debug=os.environ.get('FLASK_DEBUG', '0') == '1',
+        host=os.environ.get('FLASK_HOST', '127.0.0.1'),
         port=5000
     )
