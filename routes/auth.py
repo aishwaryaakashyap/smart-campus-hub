@@ -22,17 +22,11 @@ def register():
                 'error': f'{field} is required'
             }), 400
 
-    valid_roles = [
-        'student',
-        'coordinator',
-        'advisor',
-        'vice_chairperson',
-        'chairperson'
-    ]
+        valid_roles = ['student']
 
     if not isinstance(data['role'], str) or data['role'] not in valid_roles:
         return jsonify({
-            'error': f'Role must be one of {valid_roles}'
+            'error': 'Only student registration is allowed'
         }), 400
 
     if not all(
