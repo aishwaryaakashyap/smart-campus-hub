@@ -417,14 +417,14 @@
             );
 
 
+           
             const companyTable =
                 document.getElementById('companyTable');
 
             data.company_analytics.forEach(company => {
-
                 const row = document.createElement('tr');
 
-                               [
+                [
                     company.company_name,
                     company.drive_count,
                     company.application_count,
@@ -432,17 +432,17 @@
                     company.selection_rate_percent + '%'
                 ].forEach(value => {
                     const cell = document.createElement('td');
-                    cell.textContent = value ?? '';
+                    cell.textContent = value == null ? '' : value;
                     row.appendChild(cell);
                 });
 
+                companyTable.appendChild(row);
+            });
+
         })
-
         .catch(error => {
-
             document.getElementById('error').textContent =
                 error.message;
-
         });
 
 
@@ -521,11 +521,11 @@
                 const row = document.createElement('tr');
 
                                 const questionCell = document.createElement('td');
-                questionCell.textContent = item.question ?? '';
+                questionCell.textContent = item.question == null ? '' : item.question;
                 row.appendChild(questionCell);
 
                 const countCell = document.createElement('td');
-                countCell.textContent = item.times_mentioned ?? '';
+                countCell.textContent = item.times_mentioned == null ? '' : item.times_mentioned;
                 row.appendChild(countCell);
                 questionTable.appendChild(row);
             });
@@ -541,11 +541,11 @@
                 const row = document.createElement('tr');
 
                                 const skillCell = document.createElement('td');
-                skillCell.textContent = item.skill ?? '';
+                skillCell.textContent = item.skill == null ? '' : item.skill;
                 row.appendChild(skillCell);
 
                 const countCell = document.createElement('td');
-                countCell.textContent = item.times_mentioned ?? '';
+                countCell.textContent = item.times_mentioned == null ? '' : item.times_mentioned;
                 row.appendChild(countCell);
                 interviewSkillTable.appendChild(row);
             });
