@@ -1,3 +1,4 @@
+
 import os
 
 from flask import Flask, render_template
@@ -46,34 +47,58 @@ csrf = CSRFProtect(app)
 
 db.init_app(app)
 
-# Register application blueprints.
-app.register_blueprint(auth_bp, url_prefix='/api/auth')
-app.register_blueprint(company_bp, url_prefix='/api/companies')
-app.register_blueprint(drive_bp, url_prefix='/api/drives')
-app.register_blueprint(application_bp, url_prefix='/api/applications')
-app.register_blueprint(student_bp, url_prefix='/api/students')
-app.register_blueprint(update_bp, url_prefix='/api/updates')
-app.register_blueprint(interview_bp, url_prefix='/api/interviews')
-app.register_blueprint(intelligence_bp, url_prefix='/api/intelligence')
-app.register_blueprint(skill_bp, url_prefix='/api/skills')
-app.register_blueprint(analytics_bp, url_prefix='/api/analytics')
-app.register_blueprint(skill_gap_bp, url_prefix='/api/skill-gap')
-app.register_blueprint(grievance_bp, url_prefix='/api/grievances')
-app.register_blueprint(notifications_bp, url_prefix='/api/notifications')
+# Authentication
+app.register_blueprint(auth_bp, url_prefix="/api/auth")
+
+# Company management
+app.register_blueprint(company_bp, url_prefix="/api/companies")
+
+# Placement drives
+app.register_blueprint(drive_bp, url_prefix="/api/drives")
+
+# Student applications
+app.register_blueprint(application_bp, url_prefix="/api/applications")
+
+# Student profiles
+app.register_blueprint(student_bp, url_prefix="/api/students")
+
+# Company announcements
+app.register_blueprint(update_bp, url_prefix="/api/updates")
+
+# Interview experiences
+app.register_blueprint(interview_bp, url_prefix="/api/interviews")
+
+# Interview intelligence
+app.register_blueprint(intelligence_bp, url_prefix="/api/intelligence")
+
+# Skills management
+app.register_blueprint(skill_bp, url_prefix="/api/skills")
+
+# Placement and grievance analytics dashboard
+app.register_blueprint(analytics_bp, url_prefix="/api/analytics")
+
+# Placement skill-gap analysis
+app.register_blueprint(skill_gap_bp, url_prefix="/api/skill-gap")
+
+# Campus grievance management
+app.register_blueprint(grievance_bp, url_prefix="/api/grievances")
+
+# In-app notifications
+app.register_blueprint(notifications_bp, url_prefix="/api/notifications")
 
 
-@app.route('/skill-gap')
+@app.route("/skill-gap")
 def skill_gap_page():
-    return render_template('skill_gap.html')
+    return render_template("skill_gap.html")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with app.app_context():
         db.create_all()
         print("Database tables created successfully!")
 
     app.run(
-        debug=os.environ.get('FLASK_DEBUG', '0') == '1',
-        host=os.environ.get('FLASK_HOST', '127.0.0.1'),
-        port=5000
+        debug=os.environ.get("FLASK_DEBUG", "0") == "1",
+        host=os.environ.get("FLASK_HOST", "127.0.0.1"),
+        port=5000,
     )
