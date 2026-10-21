@@ -30,7 +30,9 @@ def submit_experience():
     if error:
         return error
 
-    data = request.get_json()
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict):
+        return jsonify({'error': 'A valid JSON object is required'}), 400
 
     for field in ['company_id', 'selection_status']:
         if field not in data or not data[field]:

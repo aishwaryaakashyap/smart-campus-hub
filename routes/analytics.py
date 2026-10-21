@@ -100,9 +100,11 @@ def placement_analytics():
 
 @analytics_bp.route('/dashboard', methods=['GET'])
 def analytics_dashboard():
+    auth_error = require_coordinator()
+    if auth_error:
+        return auth_error
+
     return render_template('analytics.html')
-
-
 
 
 @analytics_bp.route('/advanced', methods=['GET'])
