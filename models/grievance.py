@@ -1,3 +1,4 @@
+
 from extensions import db
 from datetime import datetime
 
@@ -62,19 +63,23 @@ class GrievanceUpdate(db.Model):
     __tablename__ = 'grievance_updates'
 
     id = db.Column(db.Integer, primary_key=True)
+
     grievance_id = db.Column(
         db.Integer,
         db.ForeignKey('grievances.id'),
         nullable=False
     )
+
     updated_by = db.Column(
         db.Integer,
         db.ForeignKey('users.id'),
         nullable=False
     )
+
     old_status = db.Column(db.String(30))
     new_status = db.Column(db.String(30), nullable=False)
     comment = db.Column(db.Text)
+
     created_at = db.Column(
         db.DateTime,
         default=datetime.utcnow
