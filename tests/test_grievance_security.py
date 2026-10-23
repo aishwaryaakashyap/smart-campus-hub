@@ -27,3 +27,17 @@ def test_coordinator_cannot_submit_student_grievance(client):
     assert response.get_json()["error"] == (
         "Only students can perform this action"
     )
+
+
+def test_unauthenticated_user_cannot_list_notifications(client):
+    response = client.get("/api/notifications/")
+
+    assert response.status_code == 401
+    assert response.get_json()["error"] == "Not logged in"
+
+
+def test_unauthenticated_user_cannot_mark_notification_read(client):
+    response = client.put("/api/notifications/1/read")
+
+    assert response.status_code == 401
+    assert response.get_json()["error"] == "Not logged in"
