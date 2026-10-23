@@ -60,7 +60,9 @@ def submit_grievance():
     if error:
         return error
 
-    data = request.get_json(silent=True) or {}
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict):
+        return jsonify({'error': 'Request body must be a JSON object'}), 400
 
     title = data.get('title')
     description = data.get('description')
@@ -243,7 +245,9 @@ def assign_grievance(grievance_id):
             'error': 'Only coordinators can assign grievances'
         }), 403
 
-    data = request.get_json(silent=True) or {}
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict):
+        return jsonify({'error': 'Request body must be a JSON object'}), 400
     advisor_id = data.get('advisor_id')
 
     try:
@@ -297,7 +301,9 @@ def update_grievance_status(grievance_id):
             'error': 'Only coordinators and advisors can update status'
         }), 403
 
-    data = request.get_json(silent=True) or {}
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict):
+        return jsonify({'error': 'Request body must be a JSON object'}), 400
     new_status = data.get('status')
 
     allowed_statuses = (

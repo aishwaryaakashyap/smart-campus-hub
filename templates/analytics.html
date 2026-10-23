@@ -1,597 +1,553 @@
-<!DOCTYPE html>
+
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
     <title>Smart Campus Analytics Dashboard</title>
 
     <!-- Bootstrap 5 -->
     <link
-        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
-        rel="stylesheet"
-    >
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
 
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <style>
-        body {
-            background: #f4f6f8;
-        }
+      body {
+        background: #f4f6f8;
+      }
 
-        .dashboard-card {
-            border: none;
-            border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-        }
+      .dashboard-card {
+        border: none;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      }
 
-        .chart-card {
-            border: none;
-            border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-            padding: 20px;
-            background: white;
-        }
+      .chart-card {
+        border: none;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        padding: 20px;
+        background: white;
+      }
 
-        .section-title {
-            margin-top: 35px;
-            margin-bottom: 20px;
-        }
+      .section-title {
+        margin-top: 35px;
+        margin-bottom: 20px;
+      }
 
-        .chart-container {
-            position: relative;
-            height: 300px;
-        }
+      .chart-container {
+        position: relative;
+        height: 300px;
+      }
 
-        #error {
-            color: red;
-            margin-top: 20px;
-        }
+      #error {
+        color: red;
+        margin-top: 20px;
+      }
     </style>
-</head>
+  </head>
 
-<body>
+  <body>
+    <div class="container-fluid py-4">
+      <h1 class="mb-4">Smart Campus Analytics Dashboard</h1>
 
-<div class="container-fluid py-4">
+      <!-- ==================== PLACEMENT ANALYTICS ==================== -->
 
-    <h1 class="mb-4">Smart Campus Analytics Dashboard</h1>
+      <h2 class="section-title">Placement Analytics</h2>
 
-    <!-- ==================== PLACEMENT ANALYTICS ==================== -->
-
-    <h2 class="section-title">Placement Analytics</h2>
-
-    <div class="row g-4">
-
+      <div class="row g-4">
         <div class="col-md-4 col-lg-2">
-            <div class="card dashboard-card p-3">
-                <h3 id="students">0</h3>
-                <p class="text-muted mb-0">Total Students</p>
-            </div>
+          <div class="card dashboard-card p-3">
+            <h3 id="students">0</h3>
+            <p class="text-muted mb-0">Total Students</p>
+          </div>
         </div>
 
         <div class="col-md-4 col-lg-2">
-            <div class="card dashboard-card p-3">
-                <h3 id="companies">0</h3>
-                <p class="text-muted mb-0">Total Companies</p>
-            </div>
+          <div class="card dashboard-card p-3">
+            <h3 id="companies">0</h3>
+            <p class="text-muted mb-0">Total Companies</p>
+          </div>
         </div>
 
         <div class="col-md-4 col-lg-2">
-            <div class="card dashboard-card p-3">
-                <h3 id="drives">0</h3>
-                <p class="text-muted mb-0">Placement Drives</p>
-            </div>
+          <div class="card dashboard-card p-3">
+            <h3 id="drives">0</h3>
+            <p class="text-muted mb-0">Placement Drives</p>
+          </div>
         </div>
 
         <div class="col-md-4 col-lg-2">
-            <div class="card dashboard-card p-3">
-                <h3 id="applications">0</h3>
-                <p class="text-muted mb-0">Applications</p>
-            </div>
+          <div class="card dashboard-card p-3">
+            <h3 id="applications">0</h3>
+            <p class="text-muted mb-0">Applications</p>
+          </div>
         </div>
 
         <div class="col-md-4 col-lg-2">
-            <div class="card dashboard-card p-3">
-                <h3 id="selected">0</h3>
-                <p class="text-muted mb-0">Selected Students</p>
-            </div>
+          <div class="card dashboard-card p-3">
+            <h3 id="selected">0</h3>
+            <p class="text-muted mb-0">Selected Students</p>
+          </div>
         </div>
 
         <div class="col-md-4 col-lg-2">
-            <div class="card dashboard-card p-3">
-                <h3 id="selectionRate">0%</h3>
-                <p class="text-muted mb-0">Selection Rate</p>
-            </div>
+          <div class="card dashboard-card p-3">
+            <h3 id="selectionRate">0%</h3>
+            <p class="text-muted mb-0">Selection Rate</p>
+          </div>
         </div>
+      </div>
 
-    </div>
-
-    <div class="row g-4 mt-1">
-
+      <div class="row g-4 mt-1">
         <div class="col-lg-6">
-            <div class="chart-card">
-                <h4>Application Status</h4>
+          <div class="chart-card">
+            <h4>Application Status</h4>
 
-                <div class="chart-container">
-                    <canvas id="applicationStatusChart"></canvas>
-                </div>
+            <div class="chart-container">
+              <canvas id="applicationStatusChart"></canvas>
             </div>
+          </div>
         </div>
 
         <div class="col-lg-6">
-            <div class="chart-card">
-                <h4>Company Analytics</h4>
+          <div class="chart-card">
+            <h4>Company Analytics</h4>
 
-                <div class="table-responsive">
-                    <table class="table table-striped">
-                        <thead>
-                            <tr>
-                                <th>Company</th>
-                                <th>Drives</th>
-                                <th>Applications</th>
-                                <th>Selected</th>
-                                <th>Selection Rate</th>
-                            </tr>
-                        </thead>
+            <div class="table-responsive">
+              <table class="table table-striped">
+                <thead>
+                  <tr>
+                    <th>Company</th>
+                    <th>Drives</th>
+                    <th>Applications</th>
+                    <th>Selected</th>
+                    <th>Selection Rate</th>
+                  </tr>
+                </thead>
 
-                        <tbody id="companyTable"></tbody>
-                    </table>
-                </div>
+                <tbody id="companyTable"></tbody>
+              </table>
             </div>
+          </div>
         </div>
+      </div>
 
-    </div>
+      <!-- ==================== ADVANCED ANALYTICS ==================== -->
 
-    <!-- ==================== ADVANCED ANALYTICS ==================== -->
+      <h2 class="section-title">Advanced Analytics</h2>
 
-    <h2 class="section-title">Advanced Analytics</h2>
-
-    <div class="row g-4">
-
+      <div class="row g-4">
         <div class="col-md-3">
-            <div class="card dashboard-card p-3">
-                <h3 id="totalExperiences">0</h3>
-                <p class="text-muted mb-0">Interview Experiences</p>
-            </div>
+          <div class="card dashboard-card p-3">
+            <h3 id="totalExperiences">0</h3>
+            <p class="text-muted mb-0">Interview Experiences</p>
+          </div>
         </div>
 
         <div class="col-md-3">
-            <div class="card dashboard-card p-3">
-                <h3 id="totalQuestions">0</h3>
-                <p class="text-muted mb-0">Interview Questions</p>
-            </div>
+          <div class="card dashboard-card p-3">
+            <h3 id="totalQuestions">0</h3>
+            <p class="text-muted mb-0">Interview Questions</p>
+          </div>
         </div>
 
         <div class="col-md-3">
-            <div class="card dashboard-card p-3">
-                <h3 id="totalInterviewSkills">0</h3>
-                <p class="text-muted mb-0">Interview Skills</p>
-            </div>
+          <div class="card dashboard-card p-3">
+            <h3 id="totalInterviewSkills">0</h3>
+            <p class="text-muted mb-0">Interview Skills</p>
+          </div>
         </div>
 
         <div class="col-md-3">
-            <div class="card dashboard-card p-3">
-                <h3 id="totalGrievances">0</h3>
-                <p class="text-muted mb-0">Grievances</p>
-            </div>
+          <div class="card dashboard-card p-3">
+            <h3 id="totalGrievances">0</h3>
+            <p class="text-muted mb-0">Grievances</p>
+          </div>
         </div>
+      </div>
 
-    </div>
+      <!-- Interview Charts -->
 
-    <!-- Interview Charts -->
-
-    <div class="row g-4 mt-1">
-
+      <div class="row g-4 mt-1">
         <div class="col-lg-6">
-            <div class="chart-card">
-                <h4>Interview Round Distribution</h4>
+          <div class="chart-card">
+            <h4>Interview Round Distribution</h4>
 
-                <div class="chart-container">
-                    <canvas id="roundChart"></canvas>
-                </div>
+            <div class="chart-container">
+              <canvas id="roundChart"></canvas>
             </div>
+          </div>
         </div>
 
         <div class="col-lg-6">
-            <div class="chart-card">
-                <h4>Interview Difficulty</h4>
+          <div class="chart-card">
+            <h4>Interview Difficulty</h4>
 
-                <div class="chart-container">
-                    <canvas id="difficultyChart"></canvas>
-                </div>
+            <div class="chart-container">
+              <canvas id="difficultyChart"></canvas>
             </div>
+          </div>
         </div>
+      </div>
 
-    </div>
+      <!-- Student Skill Charts -->
 
-    <!-- Student Skill Charts -->
-
-    <div class="row g-4 mt-1">
-
+      <div class="row g-4 mt-1">
         <div class="col-lg-6">
-            <div class="chart-card">
-                <h4>Student Skill Proficiency</h4>
+          <div class="chart-card">
+            <h4>Student Skill Proficiency</h4>
 
-                <div class="chart-container">
-                    <canvas id="proficiencyChart"></canvas>
-                </div>
+            <div class="chart-container">
+              <canvas id="proficiencyChart"></canvas>
             </div>
+          </div>
         </div>
 
         <div class="col-lg-6">
-            <div class="chart-card">
-                <h4>Frequently Occurring Interview Skills</h4>
+          <div class="chart-card">
+            <h4>Frequently Occurring Interview Skills</h4>
 
-                <div class="table-responsive">
-                    <table class="table table-striped">
-                        <thead>
-                            <tr>
-                                <th>Skill</th>
-                                <th>Times Mentioned</th>
-                            </tr>
-                        </thead>
+            <div class="table-responsive">
+              <table class="table table-striped">
+                <thead>
+                  <tr>
+                    <th>Skill</th>
+                    <th>Times Mentioned</th>
+                  </tr>
+                </thead>
 
-                        <tbody id="interviewSkillTable"></tbody>
-                    </table>
-                </div>
+                <tbody id="interviewSkillTable"></tbody>
+              </table>
             </div>
+          </div>
         </div>
+      </div>
 
-    </div>
+      <!-- Frequently Asked Questions -->
 
-    <!-- Frequently Asked Questions -->
-
-    <div class="row g-4 mt-1">
-
+      <div class="row g-4 mt-1">
         <div class="col-12">
-            <div class="chart-card">
-                <h4>Frequently Asked Interview Questions</h4>
+          <div class="chart-card">
+            <h4>Frequently Asked Interview Questions</h4>
 
-                <div class="table-responsive">
-                    <table class="table table-striped">
-                        <thead>
-                            <tr>
-                                <th>Question</th>
-                                <th>Times Mentioned</th>
-                            </tr>
-                        </thead>
+            <div class="table-responsive">
+              <table class="table table-striped">
+                <thead>
+                  <tr>
+                    <th>Question</th>
+                    <th>Times Mentioned</th>
+                  </tr>
+                </thead>
 
-                        <tbody id="questionTable"></tbody>
-                    </table>
-                </div>
+                <tbody id="questionTable"></tbody>
+              </table>
             </div>
+          </div>
         </div>
+      </div>
 
-    </div>
+      <!-- Grievance Analytics -->
 
-    <!-- Grievance Analytics -->
+      <h2 class="section-title">Grievance Analytics</h2>
 
-    <h2 class="section-title">Grievance Analytics</h2>
-
-    <div class="row g-4">
-
+      <div class="row g-4">
         <div class="col-lg-4">
-            <div class="chart-card">
-                <h4>Grievance Categories</h4>
+          <div class="chart-card">
+            <h4>Grievance Categories</h4>
 
-                <div class="chart-container">
-                    <canvas id="grievanceCategoryChart"></canvas>
-                </div>
+            <div class="chart-container">
+              <canvas id="grievanceCategoryChart"></canvas>
             </div>
+          </div>
         </div>
 
         <div class="col-lg-4">
-            <div class="chart-card">
-                <h4>Grievance Priority</h4>
+          <div class="chart-card">
+            <h4>Grievance Priority</h4>
 
-                <div class="chart-container">
-                    <canvas id="grievancePriorityChart"></canvas>
-                </div>
+            <div class="chart-container">
+              <canvas id="grievancePriorityChart"></canvas>
             </div>
+          </div>
         </div>
 
         <div class="col-lg-4">
-            <div class="chart-card">
-                <h4>Grievance Status</h4>
+          <div class="chart-card">
+            <h4>Grievance Status</h4>
 
-                <div class="chart-container">
-                    <canvas id="grievanceStatusChart"></canvas>
-                </div>
+            <div class="chart-container">
+              <canvas id="grievanceStatusChart"></canvas>
             </div>
+          </div>
         </div>
+      </div>
 
-    </div>
+      <!-- CGPA Statistics -->
 
-    <!-- CGPA Statistics -->
+      <h2 class="section-title">Student CGPA Statistics</h2>
 
-    <h2 class="section-title">Student CGPA Statistics</h2>
-
-    <div class="row g-4">
-
+      <div class="row g-4">
         <div class="col-md-6">
-            <div class="card dashboard-card p-4">
-                <h3 id="averageCgpa">-</h3>
-                <p class="text-muted mb-0">
-                    Average CGPA
-                </p>
-            </div>
+          <div class="card dashboard-card p-4">
+            <h3 id="averageCgpa">-</h3>
+            <p class="text-muted mb-0">Average CGPA</p>
+          </div>
         </div>
 
         <div class="col-md-6">
-            <div class="card dashboard-card p-4">
-                <h3 id="studentsWithCgpa">0</h3>
-                <p class="text-muted mb-0">
-                    Students With CGPA Data
-                </p>
-            </div>
+          <div class="card dashboard-card p-4">
+            <h3 id="studentsWithCgpa">0</h3>
+            <p class="text-muted mb-0">Students With CGPA Data</p>
+          </div>
         </div>
+      </div>
 
+      <div id="error"></div>
     </div>
 
-    <div id="error"></div>
+    <script>
+      let applicationStatusChart;
+      let roundChart;
+      let difficultyChart;
+      let proficiencyChart;
+      let grievanceCategoryChart;
+      let grievancePriorityChart;
+      let grievanceStatusChart;
 
-</div>
-
-
-<script>
-
-    let applicationStatusChart;
-    let roundChart;
-    let difficultyChart;
-    let proficiencyChart;
-    let grievanceCategoryChart;
-    let grievancePriorityChart;
-    let grievanceStatusChart;
-
-
-    function createChart(chartId, type, labels, values) {
-
+      function createChart(chartId, type, labels, values) {
         const canvas = document.getElementById(chartId);
 
         if (!canvas) {
-            return null;
+          return null;
         }
 
         return new Chart(canvas, {
-            type: type,
-            data: {
-                labels: labels,
-                datasets: [{
-                    data: values
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false
-            }
+          type: type,
+          data: {
+            labels: labels,
+            datasets: [
+              {
+                data: values,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+          },
         });
-    }
+      }
 
+      // ==================== PLACEMENT ANALYTICS ====================
 
-    // ==================== PLACEMENT ANALYTICS ====================
+      fetch("/api/analytics/placement")
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error("Unable to load placement analytics");
+          }
 
-    fetch('/api/analytics/placement')
-        .then(response => {
-
-            if (!response.ok) {
-                throw new Error('Unable to load placement analytics');
-            }
-
-            return response.json();
+          return response.json();
         })
 
-        .then(data => {
+        .then((data) => {
+          document.getElementById("students").textContent =
+            data.total_students;
 
-            document.getElementById('students').textContent =
-                data.total_students;
+          document.getElementById("companies").textContent =
+            data.total_companies;
 
-            document.getElementById('companies').textContent =
-                data.total_companies;
+          document.getElementById("drives").textContent =
+            data.total_drives;
 
-            document.getElementById('drives').textContent =
-                data.total_drives;
+          document.getElementById("applications").textContent =
+            data.total_applications;
 
-            document.getElementById('applications').textContent =
-                data.total_applications;
+          document.getElementById("selected").textContent =
+            data.selected_count;
 
-            document.getElementById('selected').textContent =
-                data.selected_count;
+          document.getElementById("selectionRate").textContent =
+            data.selection_rate_percent + "%";
 
-            document.getElementById('selectionRate').textContent =
-                data.selection_rate_percent + '%';
+          const statusLabels = Object.keys(data.application_status_counts);
 
+          const statusValues = Object.values(data.application_status_counts);
 
-            const statusLabels =
-                Object.keys(data.application_status_counts);
+          applicationStatusChart = createChart(
+            "applicationStatusChart",
+            "bar",
+            statusLabels,
+            statusValues,
+          );
 
-            const statusValues =
-                Object.values(data.application_status_counts);
+          const companyTable = document.getElementById("companyTable");
 
+          data.company_analytics.forEach((company) => {
+            const row = document.createElement("tr");
 
-            applicationStatusChart = createChart(
-                'applicationStatusChart',
-                'bar',
-                statusLabels,
-                statusValues
-            );
+            // Render company data as text, never as HTML.
+            const values = [
+              company.company_name,
+              company.drive_count,
+              company.application_count,
+              company.selected_count,
+              `${company.selection_rate_percent}%`,
+            ];
 
-
-            const companyTable =
-                document.getElementById('companyTable');
-
-            data.company_analytics.forEach(company => {
-
-                const row = document.createElement('tr');
-
-                row.innerHTML = `
-                    <td>${company.company_name}</td>
-                    <td>${company.drive_count}</td>
-                    <td>${company.application_count}</td>
-                    <td>${company.selected_count}</td>
-                    <td>${company.selection_rate_percent}%</td>
-                `;
-
-                companyTable.appendChild(row);
+            values.forEach((value) => {
+              const cell = document.createElement("td");
+              cell.textContent = String(value ?? "");
+              row.appendChild(cell);
             });
 
+            companyTable.appendChild(row);
+          });
         })
 
-        .catch(error => {
-
-            document.getElementById('error').textContent =
-                error.message;
-
+        .catch((error) => {
+          document.getElementById("error").textContent = error.message;
         });
 
+      // ==================== ADVANCED ANALYTICS ====================
 
-    // ==================== ADVANCED ANALYTICS ====================
+      fetch("/api/analytics/advanced")
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error("Unable to load advanced analytics");
+          }
 
-    fetch('/api/analytics/advanced')
-        .then(response => {
-
-            if (!response.ok) {
-                throw new Error('Unable to load advanced analytics');
-            }
-
-            return response.json();
+          return response.json();
         })
 
-        .then(data => {
+        .then((data) => {
+          const interview = data.interview;
+          const studentSkills = data.student_skills;
+          const grievances = data.grievances;
+          const readiness = data.placement_readiness;
 
-            const interview = data.interview;
-            const studentSkills = data.student_skills;
-            const grievances = data.grievances;
-            const readiness = data.placement_readiness;
+          // Summary cards
 
+          document.getElementById("totalExperiences").textContent =
+            interview.total_experiences;
 
-            // Summary cards
+          document.getElementById("totalQuestions").textContent =
+            interview.total_questions;
 
-            document.getElementById('totalExperiences').textContent =
-                interview.total_experiences;
+          document.getElementById("totalInterviewSkills").textContent =
+            interview.total_interview_skills;
 
-            document.getElementById('totalQuestions').textContent =
-                interview.total_questions;
+          document.getElementById("totalGrievances").textContent =
+            grievances.total_grievances;
 
-            document.getElementById('totalInterviewSkills').textContent =
-                interview.total_interview_skills;
+          // Interview round chart
 
-            document.getElementById('totalGrievances').textContent =
-                grievances.total_grievances;
+          roundChart = createChart(
+            "roundChart",
+            "bar",
+            Object.keys(interview.round_type_distribution),
+            Object.values(interview.round_type_distribution),
+          );
 
+          // Difficulty chart
 
-            // Interview round chart
+          difficultyChart = createChart(
+            "difficultyChart",
+            "doughnut",
+            Object.keys(interview.difficulty_distribution),
+            Object.values(interview.difficulty_distribution),
+          );
 
-            roundChart = createChart(
-                'roundChart',
-                'bar',
-                Object.keys(interview.round_type_distribution),
-                Object.values(interview.round_type_distribution)
-            );
+          // Student proficiency chart
 
+          proficiencyChart = createChart(
+            "proficiencyChart",
+            "bar",
+            Object.keys(studentSkills.proficiency_distribution),
+            Object.values(studentSkills.proficiency_distribution),
+          );
 
-            // Difficulty chart
+          // Frequently asked questions
 
-            difficultyChart = createChart(
-                'difficultyChart',
-                'doughnut',
-                Object.keys(interview.difficulty_distribution),
-                Object.values(interview.difficulty_distribution)
-            );
+          const questionTable = document.getElementById("questionTable");
 
+          interview.frequently_asked_questions.forEach((item) => {
+            const row = document.createElement("tr");
 
-            // Student proficiency chart
+            // Use textContent so question text cannot execute as HTML.
+            const questionCell = document.createElement("td");
+            questionCell.textContent = String(item.question ?? "");
 
-            proficiencyChart = createChart(
-                'proficiencyChart',
-                'bar',
-                Object.keys(studentSkills.proficiency_distribution),
-                Object.values(studentSkills.proficiency_distribution)
-            );
+            const countCell = document.createElement("td");
+            countCell.textContent = String(item.times_mentioned ?? "");
 
+            row.appendChild(questionCell);
+            row.appendChild(countCell);
 
-            // Frequently asked questions
+            questionTable.appendChild(row);
+          });
 
-            const questionTable =
-                document.getElementById('questionTable');
+          // Frequently required interview skills
 
-            interview.frequently_asked_questions.forEach(item => {
+          const interviewSkillTable = document.getElementById(
+            "interviewSkillTable",
+          );
 
-                const row = document.createElement('tr');
+          interview.frequently_required_skills.forEach((item) => {
+            const row = document.createElement("tr");
 
-                row.innerHTML = `
-                    <td>${item.question}</td>
-                    <td>${item.times_mentioned}</td>
-                `;
+            // Use textContent so skill names cannot execute as HTML.
+            const skillCell = document.createElement("td");
+            skillCell.textContent = String(item.skill ?? "");
 
-                questionTable.appendChild(row);
-            });
+            const countCell = document.createElement("td");
+            countCell.textContent = String(item.times_mentioned ?? "");
 
+            row.appendChild(skillCell);
+            row.appendChild(countCell);
 
-            // Frequently required interview skills
+            interviewSkillTable.appendChild(row);
+          });
 
-            const interviewSkillTable =
-                document.getElementById('interviewSkillTable');
+          // Grievance charts
 
-            interview.frequently_required_skills.forEach(item => {
+          grievanceCategoryChart = createChart(
+            "grievanceCategoryChart",
+            "doughnut",
+            Object.keys(grievances.category_distribution),
+            Object.values(grievances.category_distribution),
+          );
 
-                const row = document.createElement('tr');
+          grievancePriorityChart = createChart(
+            "grievancePriorityChart",
+            "bar",
+            Object.keys(grievances.priority_distribution),
+            Object.values(grievances.priority_distribution),
+          );
 
-                row.innerHTML = `
-                    <td>${item.skill}</td>
-                    <td>${item.times_mentioned}</td>
-                `;
+          grievanceStatusChart = createChart(
+            "grievanceStatusChart",
+            "bar",
+            Object.keys(grievances.status_distribution),
+            Object.values(grievances.status_distribution),
+          );
 
-                interviewSkillTable.appendChild(row);
-            });
+          // CGPA statistics
 
+          document.getElementById("averageCgpa").textContent =
+            readiness.average_cgpa !== null ? readiness.average_cgpa : "-";
 
-            // Grievance charts
-
-            grievanceCategoryChart = createChart(
-                'grievanceCategoryChart',
-                'doughnut',
-                Object.keys(grievances.category_distribution),
-                Object.values(grievances.category_distribution)
-            );
-
-
-            grievancePriorityChart = createChart(
-                'grievancePriorityChart',
-                'bar',
-                Object.keys(grievances.priority_distribution),
-                Object.values(grievances.priority_distribution)
-            );
-
-
-            grievanceStatusChart = createChart(
-                'grievanceStatusChart',
-                'bar',
-                Object.keys(grievances.status_distribution),
-                Object.values(grievances.status_distribution)
-            );
-
-
-            // CGPA statistics
-
-            document.getElementById('averageCgpa').textContent =
-                readiness.average_cgpa !== null
-                    ? readiness.average_cgpa
-                    : '-';
-
-            document.getElementById('studentsWithCgpa').textContent =
-                readiness.students_with_cgpa;
-
+          document.getElementById("studentsWithCgpa").textContent =
+            readiness.students_with_cgpa;
         })
 
-        .catch(error => {
-
-            document.getElementById('error').textContent =
-                error.message;
-
+        .catch((error) => {
+          document.getElementById("error").textContent = error.message;
         });
-
-</script>
-
-</body>
+    </script>
+  </body>
 </html>
