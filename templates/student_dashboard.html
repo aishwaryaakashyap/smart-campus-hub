@@ -1,0 +1,324 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Dashboard | Smart Campus Hub</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f4f6fb;
+            color: #253047;
+        }
+
+        header {
+            background: #253b80;
+            color: white;
+            padding: 22px 30px;
+        }
+
+        header h1 {
+            margin: 0 0 6px;
+        }
+
+        header p {
+            margin: 0;
+        }
+
+        nav {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            background: white;
+            padding: 16px 25px;
+            box-shadow: 0 2px 8px #00000012;
+        }
+
+        nav button {
+            background: #e9edfa;
+            color: #253b80;
+            border: none;
+            padding: 12px 16px;
+            border-radius: 7px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        nav button:hover {
+            background: #d4defb;
+        }
+
+        main {
+            max-width: 1100px;
+            margin: 30px auto;
+            padding: 0 20px;
+        }
+
+        .welcome {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+        }
+
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(
+                auto-fit, minmax(220px, 1fr)
+            );
+            gap: 18px;
+        }
+
+        .card {
+            background: white;
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 3px 12px #0000000a;
+            cursor: pointer;
+        }
+
+        .card:hover {
+            box-shadow: 0 5px 18px #00000020;
+        }
+
+        .card h3 {
+            color: #253b80;
+            margin-top: 0;
+        }
+
+        .card p {
+            color: #657084;
+            line-height: 1.5;
+        }
+
+        #content {
+            background: white;
+            padding: 25px;
+            margin-top: 25px;
+            border-radius: 12px;
+            overflow-wrap: anywhere;
+        }
+
+        .item {
+            border-bottom: 1px solid #e5e7eb;
+            padding: 14px 0;
+        }
+
+        .item:last-child {
+            border-bottom: none;
+        }
+
+        .error {
+            color: #b42318;
+        }
+
+        .logout {
+            margin-left: auto;
+            background: #ffe8e8;
+            color: #a02020;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>Smart Campus Hub</h1>
+        <p>Student Placement & Campus Portal</p>
+    </header>
+
+    <nav>
+        <button onclick="showHome()">Home</button>
+        <button onclick="loadSection('drives')">
+            Placement Drives
+        </button>
+        <button onclick="loadSection('applications')">
+            My Applications
+        </button>
+        <button onclick="loadSection('profile')">
+            My Profile
+        </button>
+        <button onclick="loadSection('skills')">
+            My Skills
+        </button>
+        <button onclick="loadSection('interviews')">
+            Interviews
+        </button>
+        <button onclick="loadSection('grievances')">
+            Grievances
+        </button>
+        <button class="logout" onclick="logout()">
+            Logout
+        </button>
+    </nav>
+
+    <main>
+        <div class="welcome">
+            <h2>Welcome, {{ user.name | e }}!</h2>
+            <p>
+                View placement opportunities, track applications,
+                manage your skills and access campus services.
+            </p>
+        </div>
+
+        <div class="cards">
+            <div class="card" onclick="loadSection('drives')">
+                <h3>Placement Drives</h3>
+                <p>Explore available company placement drives.</p>
+            </div>
+
+            <div class="card" onclick="loadSection('applications')">
+                <h3>My Applications</h3>
+                <p>View your submitted placement applications.</p>
+            </div>
+
+            <div class="card" onclick="loadSection('profile')">
+                <h3>Student Profile</h3>
+                <p>View your student profile details.</p>
+            </div>
+
+            <div class="card" onclick="loadSection('skills')">
+                <h3>My Skills</h3>
+                <p>See your registered technical skills.</p>
+            </div>
+
+            <div class="card" onclick="loadSection('interviews')">
+                <h3>Interview Experiences</h3>
+                <p>Browse experiences by company.</p>
+            </div>
+
+            <div class="card" onclick="loadSection('grievances')">
+                <h3>Grievances</h3>
+                <p>Track grievances you have submitted.</p>
+            </div>
+        </div>
+
+        <section id="content" aria-live="polite">
+            <h2>Student Dashboard</h2>
+            <p>Select a section above to view your information.</p>
+        </section>
+    </main>
+
+    <script>
+        const csrfToken = {{ csrf_token() | tojson }};
+
+        const endpoints = {
+            drives: "/api/drives/",
+            applications: "/api/applications/my-applications",
+            profile: "/api/students/profile",
+            skills: "/api/skills/my-skills",
+            grievances: "/api/grievances/mine"
+        };
+
+        const titles = {
+            drives: "Placement Drives",
+            applications: "My Applications",
+            profile: "My Profile",
+            skills: "My Skills",
+            interviews: "Interview Experiences",
+            grievances: "My Grievances"
+        };
+
+        function showHome() {
+            document.getElementById("content").innerHTML =
+                "<h2>Student Dashboard</h2>" +
+                "<p>Select a section to view your information.</p>";
+        }
+
+        function renderValue(value) {
+            if (value === null || value === undefined) {
+                return "Not available";
+            }
+
+            if (typeof value === "object") {
+                return JSON.stringify(value, null, 2);
+            }
+
+            return String(value);
+        }
+
+        function createDataElement(value) {
+            const pre = document.createElement("pre");
+            pre.style.whiteSpace = "pre-wrap";
+            pre.style.wordBreak = "break-word";
+            pre.textContent = renderValue(value);
+            return pre;
+        }
+
+        async function loadSection(section) {
+            const content = document.getElementById("content");
+            content.replaceChildren();
+
+            const heading = document.createElement("h2");
+            heading.textContent = titles[section] || "Dashboard";
+            content.appendChild(heading);
+
+            if (section === "interviews") {
+                const paragraph = document.createElement("p");
+                paragraph.textContent =
+                    "Interview experiences are available by " +
+                    "company. Select a company through the " +
+                    "company API to view its experiences.";
+                content.appendChild(paragraph);
+                return;
+            }
+
+            const loading = document.createElement("p");
+            loading.textContent = "Loading...";
+            content.appendChild(loading);
+
+            try {
+                const response = await fetch(endpoints[section], {
+                    credentials: "same-origin"
+                });
+
+                const data = await response.json();
+                loading.remove();
+
+                if (!response.ok) {
+                    const error = document.createElement("p");
+                    error.className = "error";
+                    error.textContent =
+                        data.error ||
+                        "Unable to load this section.";
+                    content.appendChild(error);
+                    return;
+                }
+
+                content.appendChild(createDataElement(data));
+            } catch (error) {
+                loading.textContent =
+                    "Unable to connect to the server.";
+                loading.className = "error";
+            }
+        }
+
+        async function logout() {
+            try {
+                const response = await fetch("/api/auth/logout", {
+                    method: "POST",
+                    credentials: "same-origin",
+                    headers: {
+                        "X-CSRFToken": csrfToken
+                    }
+                });
+
+                if (!response.ok) {
+                    alert("Logout failed. Please try again.");
+                    return;
+                }
+
+                window.location.href = "/api/auth/login-page";
+            } catch (error) {
+                alert("Unable to connect to the server.");
+            }
+        }
+    </script>
+</body>
+</html>
