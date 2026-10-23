@@ -41,3 +41,47 @@ def test_unauthenticated_user_cannot_mark_notification_read(client):
 
     assert response.status_code == 401
     assert response.get_json()["error"] == "Not logged in"
+
+
+def test_unauthenticated_user_cannot_view_grievance(client):
+    response = client.get("/api/grievances/1")
+    assert response.status_code == 401
+
+
+def test_unauthenticated_user_cannot_view_grievance_history(client):
+    response = client.get("/api/grievances/1/history")
+    assert response.status_code == 401
+
+
+def test_unauthenticated_user_cannot_manage_grievances(client):
+    response = client.get("/api/grievances/manage")
+    assert response.status_code == 401
+
+
+def test_unauthenticated_user_cannot_assign_grievance(client):
+    response = client.put(
+        "/api/grievances/1/assign",
+        json={"advisor_id": 2}
+    )
+    assert response.status_code == 401
+
+
+def test_unauthenticated_user_cannot_update_grievance_status(client):
+    response = client.put(
+        "/api/grievances/1/status",
+        json={"status": "Resolved"}
+    )
+    assert response.status_code == 401
+
+
+def test_student_cannot_manage_grievances(client):
+    with client.session_transaction() as session:
+        session["user_id"] = 999
+        session["role"] = "student"
+
+    response = client.get("/api/grievances/manage")
+
+    assert response.status_code == 403
+    assert response.get_json()["error"] == (
+        "Only coordinators and advisors can access this endpoint"
+    )
