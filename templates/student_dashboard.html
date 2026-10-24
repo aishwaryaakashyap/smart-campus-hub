@@ -477,6 +477,547 @@
             });
         }
 
+
+        function addInterviewText(parent, tag, text, className = "") {
+            const element = document.createElement(tag);
+            element.textContent = text ?? "";
+            if (className) {
+                element.className = className;
+            }
+            parent.appendChild(element);
+            return element;
+        }
+
+        async function loadInterviews(content) {
+            const loading = addInterviewText(
+                content, "p", "Loading companies..."
+            );
+
+            try {
+                const response = await fetch("/api/companies/", {
+                    credentials: "same-origin"
+                });
+                const companies = await response.json();
+
+                if (!response.ok) {
+                    loading.remove();
+                    showError(
+                        content,
+                        companies.error || "Unable to load companies."
+                    );
+                    return;
+                }
+
+                loading.remove();
+
+                if (!Array.isArray(companies) || companies.length === 0) {
+                    addInterviewText(
+                        content, "p",
+                        "No companies are available yet.",
+                        "empty-message"
+                    );
+                    return;
+                }
+
+                const label = addInterviewText(
+                    content, "label", "Select a company"
+                );
+                label.htmlFor = "interview-company";
+
+                const selector = document.createElement("select");
+                selector.id = "interview-company";
+                selector.style.display = "block";
+                selector.style.width = "100%";
+                selector.style.maxWidth = "450px";
+                selector.style.padding = "10px";
+                selector.style.margin = "10px 0 20px";
+                selector.style.borderRadius = "6px";
+                selector.style.border = "1px solid #cbd5e1";
+
+                const firstOption = document.createElement("option");
+                firstOption.value = "";
+                firstOption.textContent = "-- Choose a company --";
+                selector.appendChild(firstOption);
+
+                companies.forEach(company => {
+                    const option = document.createElement("option");
+                    option.value = String(company.id);
+                    option.textContent = company.name || "Unnamed company";
+                    selector.appendChild(option);
+                });
+
+                content.appendChild(selector);
+
+                const results = document.createElement("div");
+                results.id = "interview-results";
+                content.appendChild(results);
+
+                selector.addEventListener("change", async () => {
+                    results.replaceChildren();
+
+                    if (!selector.value) {
+                        return;
+                    }
+
+                    await loadCompanyInterviews(
+                        selector.value, results
+                    );
+                });
+            } catch (error) {
+                loading.textContent =
+                    "Unable to connect to the server while loading companies.";
+                loading.className = "error";
+            }
+        }
+
+        async function loadCompanyInterviews(companyId, results) {
+            results.replaceChildren();
+
+            const loading = addInterviewText(
+                results, "p", "Loading interview experiences..."
+            );
+
+            try {
+                const response = await fetch(
+                    `/api/interviews/company/${encodeURIComponent(companyId)}`,
+                    { credentials: "same-origin" }
+                );
+                const experiences = await response.json();
+
+                loading.remove();
+
+                if (!response.ok) {
+                    showError(
+                        results,
+                        experiences.error ||
+                        "Unable to load interview experiences."
+                    );
+                    return;
+                }
+
+                const actions = document.createElement("div");
+                actions.style.display = "flex";
+                actions.style.flexWrap = "wrap";
+                actions.style.gap = "10px";
+                actions.style.marginBottom = "20px";
+
+                const intelligenceButton = document.createElement("button");
+                intelligenceButton.type = "button";
+                intelligenceButton.textContent =
+                    "View Company Interview Insights";
+                intelligenceButton.addEventListener("click", () => {
+                    loadInterviewIntelligence(companyId, results);
+                });
+                actions.appendChild(intelligenceButton);
+                results.appendChild(actions);
+
+                addInterviewText(results, "h3", "Interview Experiences");
+
+                if (!Array.isArray(experiences) ||
+                    experiences.length === 0) {
+                    addInterviewText(
+                        results, "p",
+                        "No interview experiences have been recorded for this company.",
+                        "empty-message"
+                    );
+                    return;
+                }
+
+                experiences.forEach(experience => {
+                    const card = document.createElement("div");
+                    card.className = "card";
+
+                    addInterviewText(
+                        card, "h3",
+                        experience.job_role || "Role not specified"
+                    );
+                    addInterviewText(
+                        card, "p",
+                        "Year: " + (experience.year ?? "Not available")
+                    );
+                    addInterviewText(
+                        card, "p",
+                        "Selection status: " +
+                        (experience.selection_status || "Not available")
+                    );
+                    addInterviewText(
+                        card, "p",
+                        "Difficulty: " +
+                        (experience.overall_difficulty || "Not available")
+                    );
+                    addInterviewText(
+                        card, "p",
+                        "Interview rounds: " +
+                        (experience.round_count ?? 0)
+                    );
+
+                    const detailsButton = document.createElement("button");
+                    detailsButton.type = "button";
+                    detailsButton.textContent = "View Full Details";
+                    detailsButton.addEventListener("click", () => {
+                        loadInterviewDetails(experience.id, results);
+                    });
+                    card.appendChild(detailsButton);
+                    results.appendChild(card);
+                });
+            } catch (error) {
+                loading.textContent =
+                    "Unable to connect to the server while loading interviews.";
+                loading.className = "error";
+            }
+        }
+
+        async function loadInterviewDetails(experienceId, results) {
+            const existingDetails =
+                document.getElementById("interview-detail-panel");
+
+            if (existingDetails) {
+                existingDetails.remove();
+            }
+
+            const panel = document.createElement("section");
+            panel.id = "interview-detail-panel";
+            panel.className = "card";
+            results.appendChild(panel);
+
+            addInterviewText(panel, "h3", "Interview Details");
+            const loading = addInterviewText(
+                panel, "p", "Loading full interview details..."
+            );
+
+            try {
+                const response = await fetch(
+                    `/api/interviews/${encodeURIComponent(experienceId)}`,
+                    { credentials: "same-origin" }
+                );
+                const data = await response.json();
+                loading.remove();
+
+                if (!response.ok) {
+                    showError(
+                        panel,
+                        data.error || "Unable to load interview details."
+                    );
+                    return;
+                }
+
+                addInterviewText(
+                    panel, "p", "Company: " +
+                    (data.company_name || "Not available")
+                );
+                addInterviewText(
+                    panel, "p", "Role: " +
+                    (data.job_role || "Not available")
+                );
+                addInterviewText(
+                    panel, "p", "Year: " +
+                    (data.year ?? "Not available")
+                );
+                addInterviewText(
+                    panel, "p", "Selection status: " +
+                    (data.selection_status || "Not available")
+                );
+                addInterviewText(
+                    panel, "p", "Overall difficulty: " +
+                    (data.overall_difficulty || "Not available")
+                );
+                addInterviewText(
+                    panel, "h4", "Preparation Summary"
+                );
+                addInterviewText(
+                    panel, "p",
+                    data.preparation_summary || "No preparation summary provided."
+                );
+                addInterviewText(
+                    panel, "h4", "Reported Selection Factors"
+                );
+                addInterviewText(
+                    panel, "p",
+                    data.student_reported_selection_factors ||
+                    "No selection factors provided."
+                );
+
+                addInterviewText(panel, "h4", "Interview Rounds");
+
+                if (!Array.isArray(data.rounds) || data.rounds.length === 0) {
+                    addInterviewText(
+                        panel, "p", "No round details recorded.",
+                        "empty-message"
+                    );
+                } else {
+                    data.rounds.forEach(round => {
+                        const roundCard = document.createElement("div");
+                        roundCard.className = "card";
+
+                        addInterviewText(
+                            roundCard, "h4",
+                            "Round " + (round.round_number ?? "") +
+                            ": " + (round.round_type || "Unspecified")
+                        );
+                        addInterviewText(
+                            roundCard, "p",
+                            "Mode: " + (round.mode || "Not available")
+                        );
+                        addInterviewText(
+                            roundCard, "p",
+                            "Duration: " +
+                            (round.duration_minutes ?? "Not available") +
+                            " minutes"
+                        );
+                        addInterviewText(
+                            roundCard, "p",
+                            "Difficulty: " +
+                            (round.difficulty || "Not available")
+                        );
+
+                        if (round.remarks) {
+                            addInterviewText(
+                                roundCard, "p", "Remarks: " + round.remarks
+                            );
+                        }
+
+                        addInterviewText(roundCard, "h5", "Questions");
+
+                        if (!Array.isArray(round.questions) ||
+                            round.questions.length === 0) {
+                            addInterviewText(
+                                roundCard, "p", "No questions recorded."
+                            );
+                        } else {
+                            round.questions.forEach(question => {
+                                const questionCard =
+                                    document.createElement("div");
+                                questionCard.style.marginBottom = "12px";
+
+                                addInterviewText(
+                                    questionCard, "p",
+                                    question.question_text || "Question not provided"
+                                );
+                                addInterviewText(
+                                    questionCard, "p",
+                                    "Topic: " + (question.topic || "Not specified") +
+                                    " | Difficulty: " +
+                                    (question.difficulty || "Not specified")
+                                );
+
+                                if (Array.isArray(question.answers)) {
+                                    question.answers.forEach(answer => {
+                                        addInterviewText(
+                                            questionCard, "p",
+                                            "Student answer: " +
+                                            (answer.student_answer || "Not provided")
+                                        );
+                                        addInterviewText(
+                                            questionCard, "p",
+                                            "Answer status: " +
+                                            (answer.answer_status || "Not specified")
+                                        );
+
+                                        if (answer.reference_answer) {
+                                            addInterviewText(
+                                                questionCard, "p",
+                                                "Reference answer: " +
+                                                answer.reference_answer
+                                            );
+                                        }
+                                    });
+                                }
+
+                                questionCard.style.borderBottom =
+                                    "1px solid #e0e7f0";
+                                questionCard.style.paddingBottom = "8px";
+                                roundCard.appendChild(questionCard);
+                            });
+                        }
+
+                        panel.appendChild(roundCard);
+                    });
+                }
+
+                addInterviewText(panel, "h4", "Related Skills");
+                if (Array.isArray(data.skills) && data.skills.length) {
+                    data.skills.forEach(skill => {
+                        addInterviewText(
+                            panel, "p",
+                            (skill.skill_name || "Skill") +
+                            " — importance: " +
+                            (skill.importance_rating ?? "Not rated")
+                        );
+                    });
+                } else {
+                    addInterviewText(panel, "p", "No skills recorded.");
+                }
+
+                addInterviewText(panel, "h4", "Preparation Resources");
+                if (Array.isArray(data.resources) && data.resources.length) {
+                    data.resources.forEach(resource => {
+                        const item = document.createElement("div");
+                        addInterviewText(
+                            item, "p",
+                            (resource.resource_type || "Resource") +
+                            ": " + (resource.resource_name || "Unnamed resource")
+                        );
+
+                        if (resource.description) {
+                            addInterviewText(
+                                item, "p", resource.description
+                            );
+                        }
+
+                        if (resource.url) {
+                            try {
+                                const parsedUrl = new URL(resource.url);
+                                if (["http:", "https:"].includes(parsedUrl.protocol)) {
+                                    const link = document.createElement("a");
+                                    link.href = parsedUrl.href;
+                                    link.target = "_blank";
+                                    link.rel = "noopener noreferrer";
+                                    link.textContent = "Open resource";
+                                    item.appendChild(link);
+                                }
+                            } catch (error) {
+                                // Ignore invalid resource URLs.
+                            }
+                        }
+
+                        panel.appendChild(item);
+                    });
+                } else {
+                    addInterviewText(panel, "p", "No resources recorded.");
+                }
+            } catch (error) {
+                loading.textContent =
+                    "Unable to connect to the server while loading interview details.";
+                loading.className = "error";
+            }
+        }
+
+        async function loadInterviewIntelligence(companyId, results) {
+            let panel = document.getElementById("interview-intelligence-panel");
+
+            if (!panel) {
+                panel = document.createElement("section");
+                panel.id = "interview-intelligence-panel";
+                panel.className = "card";
+                results.prepend(panel);
+            }
+
+            panel.replaceChildren();
+            addInterviewText(panel, "h3", "Company Interview Insights");
+
+            const loading = addInterviewText(
+                panel, "p", "Loading company insights..."
+            );
+
+            try {
+                const response = await fetch(
+                    `/api/intelligence/company/${encodeURIComponent(companyId)}`,
+                    { credentials: "same-origin" }
+                );
+                const data = await response.json();
+                loading.remove();
+
+                if (!response.ok) {
+                    showError(
+                        panel,
+                        data.error || "Unable to load company insights."
+                    );
+                    return;
+                }
+
+                addInterviewText(
+                    panel, "p", "Company: " +
+                    (data.company_name || "Not available")
+                );
+                addInterviewText(
+                    panel, "p", "Total experiences: " +
+                    (data.total_experiences ?? 0)
+                );
+
+                if (data.total_experiences === 0) {
+                    addInterviewText(
+                        panel, "p",
+                        data.message || "No interview insights are available yet.",
+                        "empty-message"
+                    );
+                    return;
+                }
+
+                addInterviewText(
+                    panel, "p", "Selected reports: " +
+                    (data.selected_count ?? 0)
+                );
+                addInterviewText(
+                    panel, "p", "Not selected reports: " +
+                    (data.not_selected_count ?? 0)
+                );
+                addInterviewText(
+                    panel, "p", "Average difficulty: " +
+                    (data.average_difficulty_score ?? "Not available")
+                );
+
+                if (data.average_difficulty_note) {
+                    addInterviewText(
+                        panel, "p", data.average_difficulty_note
+                    );
+                }
+
+                addInterviewText(panel, "h4", "Round Type Distribution");
+                if (data.round_type_distribution &&
+                    Object.keys(data.round_type_distribution).length) {
+                    Object.entries(data.round_type_distribution).forEach(
+                        ([roundType, count]) => {
+                            addInterviewText(
+                                panel, "p", roundType + ": " + count
+                            );
+                        }
+                    );
+                } else {
+                    addInterviewText(
+                        panel, "p", "No round distribution data available."
+                    );
+                }
+
+                addInterviewText(panel, "h4", "Frequently Asked Questions");
+                if (Array.isArray(data.frequently_asked_questions) &&
+                    data.frequently_asked_questions.length) {
+                    data.frequently_asked_questions.forEach(item => {
+                        addInterviewText(
+                            panel, "p",
+                            (item.question || "Question not specified") +
+                            " — mentioned " +
+                            (item.times_mentioned ?? 0) + " time(s)"
+                        );
+                    });
+                } else {
+                    addInterviewText(
+                        panel, "p", "No frequently asked questions recorded."
+                    );
+                }
+
+                addInterviewText(panel, "h4", "Frequently Required Skills");
+                if (Array.isArray(data.frequently_required_skills) &&
+                    data.frequently_required_skills.length) {
+                    data.frequently_required_skills.forEach(item => {
+                        addInterviewText(
+                            panel, "p",
+                            (item.skill || "Skill not specified") +
+                            " — mentioned " +
+                            (item.times_mentioned ?? 0) + " time(s)"
+                        );
+                    });
+                } else {
+                    addInterviewText(
+                        panel, "p", "No frequently required skills recorded."
+                    );
+                }
+            } catch (error) {
+                loading.textContent =
+                    "Unable to connect to the server while loading company insights.";
+                loading.className = "error";
+            }
+        }
+
         async function loadSection(section) {
             const content = document.getElementById("content");
             content.replaceChildren();
@@ -486,12 +1027,7 @@
             content.appendChild(heading);
 
             if (section === "interviews") {
-                const paragraph = document.createElement("p");
-                paragraph.textContent =
-                    "Interview experiences are available by company. " +
-                    "Select a company through the company API to view " +
-                    "its experiences.";
-                content.appendChild(paragraph);
+                await loadInterviews(content);
                 return;
             }
 
