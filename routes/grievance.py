@@ -62,7 +62,9 @@ def submit_grievance():
 
     data = request.get_json(silent=True)
     if not isinstance(data, dict):
-        return jsonify({'error': 'Request body must be a JSON object'}), 400
+        return jsonify({
+            'error': 'Request body must be a JSON object'
+        }), 400
 
     title = data.get('title')
     description = data.get('description')
@@ -79,10 +81,22 @@ def submit_grievance():
     if not isinstance(description, str) or not description.strip():
         return jsonify({'error': 'Description is required'}), 400
 
+    if isinstance(category_id, bool):
+        return jsonify({
+            'error': 'A valid category_id is required'
+        }), 400
+
     try:
         category_id = int(category_id)
     except (TypeError, ValueError):
-        return jsonify({'error': 'A valid category_id is required'}), 400
+        return jsonify({
+            'error': 'A valid category_id is required'
+        }), 400
+
+    if category_id <= 0:
+        return jsonify({
+            'error': 'A valid category_id is required'
+        }), 400
 
     category = db.session.get(GrievanceCategory, category_id)
 
@@ -93,7 +107,9 @@ def submit_grievance():
 
     priority = data.get('priority', 'Medium')
 
-    if priority not in ('Low', 'Medium', 'High'):
+    if not isinstance(priority, str) or priority not in (
+        'Low', 'Medium', 'High'
+    ):
         return jsonify({
             'error': 'Priority must be Low, Medium, or High'
         }), 400
@@ -108,28 +124,35 @@ def submit_grievance():
         category_id=category.id,
         title=title.strip(),
         description=description.strip(),
-        location=location.strip() if location else None,
+        location=location.strip() if location and location.strip() else None,
         priority=priority,
         status='Submitted'
     )
 
-    db.session.add(grievance)
-    db.session.flush()
+    try:
+        db.session.add(grievance)
+        db.session.flush()
 
-    coordinators = User.query.filter_by(role='coordinator').all()
+        coordinators = User.query.filter_by(role='coordinator').all()
 
-    for coordinator in coordinators:
-        create_notification(
-            user_id=coordinator.id,
-            title='New Grievance Submitted',
-            message=(
-                f'A new grievance "{grievance.title}" '
-                f'has been submitted.'
-            ),
-            notification_type='grievance'
-        )
+        for coordinator in coordinators:
+            create_notification(
+                user_id=coordinator.id,
+                title='New Grievance Submitted',
+                message=(
+                    f'A new grievance "{grievance.title}" '
+                    f'has been submitted.'
+                ),
+                notification_type='grievance'
+            )
 
-    db.session.commit()
+        db.session.commit()
+
+    except Exception:
+        db.session.rollback()
+        return jsonify({
+            'error': 'Unable to submit grievance at this time'
+        }), 500
 
     return jsonify({
         'message': 'Grievance submitted successfully',
@@ -246,14 +269,31 @@ def assign_grievance(grievance_id):
         }), 403
 
     data = request.get_json(silent=True)
+
     if not isinstance(data, dict):
-        return jsonify({'error': 'Request body must be a JSON object'}), 400
+        return jsonify({
+            'error': 'Request body must be a JSON object'
+        }), 400
+
     advisor_id = data.get('advisor_id')
+
+    # Booleans are integers in Python, so reject them explicitly.
+    if isinstance(advisor_id, bool):
+        return jsonify({
+            'error': 'A valid advisor_id is required'
+        }), 400
 
     try:
         advisor_id = int(advisor_id)
     except (TypeError, ValueError):
-        return jsonify({'error': 'A valid advisor_id is required'}), 400
+        return jsonify({
+            'error': 'A valid advisor_id is required'
+        }), 400
+
+    if advisor_id <= 0:
+        return jsonify({
+            'error': 'A valid advisor_id is required'
+        }), 400
 
     grievance = db.session.get(Grievance, grievance_id)
 
@@ -267,19 +307,26 @@ def assign_grievance(grievance_id):
             'error': 'The selected user is not an advisor'
         }), 400
 
-    grievance.assigned_to = advisor.id
+    try:
+        grievance.assigned_to = advisor.id
 
-    create_notification(
-        user_id=advisor.id,
-        title='Grievance Assigned to You',
-        message=(
-            f'Grievance "{grievance.title}" '
-            f'has been assigned to you.'
-        ),
-        notification_type='grievance'
-    )
+        create_notification(
+            user_id=advisor.id,
+            title='Grievance Assigned to You',
+            message=(
+                f'Grievance "{grievance.title}" '
+                f'has been assigned to you.'
+            ),
+            notification_type='grievance'
+        )
 
-    db.session.commit()
+        db.session.commit()
+
+    except Exception:
+        db.session.rollback()
+        return jsonify({
+            'error': 'Unable to assign grievance at this time'
+        }), 500
 
     return jsonify({
         'message': 'Grievance assigned successfully',
@@ -302,8 +349,12 @@ def update_grievance_status(grievance_id):
         }), 403
 
     data = request.get_json(silent=True)
+
     if not isinstance(data, dict):
-        return jsonify({'error': 'Request body must be a JSON object'}), 400
+        return jsonify({
+            'error': 'Request body must be a JSON object'
+        }), 400
+
     new_status = data.get('status')
 
     allowed_statuses = (
@@ -349,32 +400,39 @@ def update_grievance_status(grievance_id):
         updated_by=user_id,
         old_status=old_status,
         new_status=new_status,
-        comment=comment.strip() if comment else None
+        comment=comment.strip() if comment and comment.strip() else None
     )
 
-    grievance.status = new_status
-    db.session.add(history)
+    try:
+        grievance.status = new_status
+        db.session.add(history)
 
-    if new_status == 'Resolved':
-        notification_title = 'Grievance Resolved'
-        notification_message = (
-            f'Your grievance "{grievance.title}" has been resolved.'
+        if new_status == 'Resolved':
+            notification_title = 'Grievance Resolved'
+            notification_message = (
+                f'Your grievance "{grievance.title}" has been resolved.'
+            )
+        else:
+            notification_title = 'Grievance Status Updated'
+            notification_message = (
+                f'Your grievance "{grievance.title}" status changed '
+                f'from "{old_status}" to "{new_status}".'
+            )
+
+        create_notification(
+            user_id=grievance.student.user_id,
+            title=notification_title,
+            message=notification_message,
+            notification_type='grievance'
         )
-    else:
-        notification_title = 'Grievance Status Updated'
-        notification_message = (
-            f'Your grievance "{grievance.title}" status changed '
-            f'from "{old_status}" to "{new_status}".'
-        )
 
-    create_notification(
-        user_id=grievance.student.user_id,
-        title=notification_title,
-        message=notification_message,
-        notification_type='grievance'
-    )
+        db.session.commit()
 
-    db.session.commit()
+    except Exception:
+        db.session.rollback()
+        return jsonify({
+            'error': 'Unable to update grievance status at this time'
+        }), 500
 
     return jsonify({
         'message': 'Grievance status updated successfully',

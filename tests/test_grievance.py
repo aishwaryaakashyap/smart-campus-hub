@@ -258,7 +258,35 @@ class GrievanceSecurityTests(unittest.TestCase):
             response.get_json()['error'],
             'Location must be text'
         )
+    def test_assignment_rejects_boolean_advisor_id(self):
+        with self.client.session_transaction() as session:
+            session['user_id'] = 1
+            session['role'] = 'coordinator'
 
+        with patch(
+            'routes.grievance.db.session.get'
+        ) as mock_get:
+            mock_grievance = MagicMock()
+            mock_grievance.id = 10
+
+            mock_advisor = MagicMock()
+            mock_advisor.id = 1
+            mock_advisor.role = 'advisor'
+
+            mock_get.side_effect = [mock_grievance, mock_advisor]
+
+            with patch('routes.grievance.create_notification'), \
+                 patch('routes.grievance.db.session.commit'):
+                response = self.client.put(
+                    '/api/grievances/10/assign',
+                    json={'advisor_id': True}
+                )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(
+            response.get_json()['error'],
+            'A valid advisor_id is required'
+        )
 
 if __name__ == '__main__':
     unittest.main()

@@ -1,4 +1,7 @@
-from flask import Blueprint, request, jsonify, session, render_template
+from flask import (
+    Blueprint, request, jsonify, session,
+    render_template, redirect, url_for
+)
 from extensions import db
 from models import User, Student
 
@@ -155,3 +158,25 @@ def me():
 @auth_bp.route('/login-page', methods=['GET'])
 def login_page():
     return render_template('login.html')
+
+
+@auth_bp.route('/student-dashboard', methods=['GET'])
+def student_dashboard():
+    if 'user_id' not in session:
+        return redirect(url_for('auth.login_page'))
+
+    if session.get('role') != 'student':
+        return jsonify({
+            'error': 'Only students can access this dashboard'
+        }), 403
+
+    user = db.session.get(User, session['user_id'])
+
+    if not user or user.role != 'student':
+        session.clear()
+        return redirect(url_for('auth.login_page'))
+
+    return render_template(
+        'student_dashboard.html',
+        user=user
+    )

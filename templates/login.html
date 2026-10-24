@@ -1,77 +1,73 @@
-
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="csrf-token" content="{{ csrf_token() }}">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="csrf-token" content="{{ csrf_token() }}" />
     <title>Smart Campus Hub - Login</title>
-</head>
+  </head>
 
-<body>
+  <body>
     <h1>Smart Campus Hub</h1>
     <h2>Login</h2>
 
     <form id="loginForm">
-        <label for="email">Email:</label><br>
-        <input type="email" id="email" required><br><br>
+      <label for="email">Email:</label><br />
+      <input type="email" id="email" required /><br /><br />
 
-        <label for="password">Password:</label><br>
-        <input type="password" id="password" required><br><br>
+      <label for="password">Password:</label><br />
+      <input type="password" id="password" required /><br /><br />
 
-        <button type="submit">Login</button>
+      <button type="submit">Login</button>
     </form>
 
     <p id="message"></p>
 
     <script>
-        document.getElementById("loginForm").addEventListener(
-            "submit",
-            async function(event) {
-                event.preventDefault();
+      document
+        .getElementById("loginForm")
+        .addEventListener("submit", async function (event) {
+          event.preventDefault();
 
-                const email = document.getElementById("email").value;
-                const password = document.getElementById("password").value;
-                const csrfToken = document.querySelector(
-                    'meta[name="csrf-token"]'
-                ).content;
-                const message = document.getElementById("message");
+          const email = document.getElementById("email").value;
+          const password = document.getElementById("password").value;
+          const csrfToken = document.querySelector(
+            'meta[name="csrf-token"]',
+          ).content;
+          const message = document.getElementById("message");
 
-                try {
-                    const response = await fetch("/api/auth/login", {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json",
-                            "X-CSRFToken": csrfToken
-                        },
-                        body: JSON.stringify({
-                            email: email,
-                            password: password
-                        })
-                    });
+          try {
+            const response = await fetch("/api/auth/login", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": csrfToken,
+              },
+              body: JSON.stringify({
+                email: email,
+                password: password,
+              }),
+            });
 
-                    const data = await response.json();
+            const data = await response.json();
 
-                    if (response.ok) {
-                        message.textContent = "Login successful!";
+            if (response.ok) {
+              message.textContent = "Login successful!";
 
-                        if (data.role === "coordinator") {
-                            window.location.href =
-                                "/api/analytics/dashboard";
-                        } else {
-                            message.textContent =
-                                "Logged in, but this dashboard is for coordinators.";
-                        }
-                    } else {
-                        message.textContent =
-                            data.error || "Login failed.";
-                    }
-                } catch (error) {
-                    message.textContent =
-                        "Unable to connect. Please try again.";
-                }
+              if (data.role === "coordinator") {
+                window.location.href = "/api/analytics/dashboard";
+              } else if (data.role === "student") {
+                window.location.href = "/api/auth/student-dashboard";
+              } else {
+                message.textContent = "Unknown user role.";
+              }
+            } else {
+              message.textContent = data.error || "Login failed.";
             }
-        );
+          } catch (error) {
+            message.textContent = "Unable to connect. Please try again.";
+          }
+        });
     </script>
-</body>
+  </body>
 </html>

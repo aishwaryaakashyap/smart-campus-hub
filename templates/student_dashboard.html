@@ -1,0 +1,1088 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Dashboard | Smart Campus Hub</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f4f7fb;
+            color: #243047;
+        }
+
+        header {
+            background: #173b67;
+            color: white;
+            padding: 22px;
+            text-align: center;
+        }
+
+        header h1 {
+            margin: 0 0 8px;
+        }
+
+        header p {
+            margin: 0;
+        }
+
+        nav {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+            padding: 14px 20px;
+            background: white;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
+        }
+
+        button {
+            border: none;
+            border-radius: 6px;
+            padding: 10px 14px;
+            background: #245b96;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        button:hover {
+            background: #173b67;
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .logout {
+            margin-left: auto;
+            background: #ffe8e8;
+            color: #a02020;
+        }
+
+        .logout:hover {
+            background: #ffd3d3;
+        }
+
+        main {
+            max-width: 1200px;
+            margin: 25px auto;
+            padding: 0 20px;
+        }
+
+        .welcome {
+            background: white;
+            border-radius: 10px;
+            padding: 24px;
+            margin-bottom: 22px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .welcome h2 {
+            margin-top: 0;
+        }
+
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+            margin-bottom: 25px;
+        }
+
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            border: 1px solid #e0e7f0;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+            overflow-wrap: anywhere;
+        }
+
+        .clickable-card {
+            cursor: pointer;
+            transition: transform 0.15s ease;
+        }
+
+        .clickable-card:hover {
+            transform: translateY(-3px);
+        }
+
+        .card h3 {
+            margin-top: 0;
+            color: #173b67;
+        }
+
+        #content {
+            background: white;
+            border-radius: 10px;
+            padding: 24px;
+            min-height: 150px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        #content h2 {
+            margin-top: 0;
+        }
+
+        #content .card {
+            margin-bottom: 14px;
+        }
+
+        .error {
+            color: #b42318;
+        }
+
+        .notification-status {
+            display: inline-block;
+            border-radius: 5px;
+            padding: 5px 9px;
+            background: #e8eef6;
+            color: #173b67;
+            font-size: 13px;
+        }
+
+        .notification-status.unread {
+            background: #fff0cf;
+            color: #855400;
+        }
+
+        .notification-status.read {
+            background: #e1f5e8;
+            color: #17653a;
+        }
+
+        .empty-message {
+            color: #667085;
+        }
+
+        pre {
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+            font-family: inherit;
+            line-height: 1.6;
+        }
+
+        @media (max-width: 600px) {
+            nav {
+                padding: 12px;
+            }
+
+            nav button {
+                flex: 1 1 auto;
+            }
+
+            .logout {
+                margin-left: 0;
+            }
+
+            main {
+                padding: 0 12px;
+            }
+
+            .welcome,
+            #content {
+                padding: 18px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>Smart Campus Hub</h1>
+        <p>Student Placement &amp; Campus Portal</p>
+    </header>
+
+    <nav>
+        <button type="button" onclick="showHome()">Home</button>
+
+        <button type="button" onclick="loadSection('drives')">
+            Placement Drives
+        </button>
+
+        <button type="button" onclick="loadSection('applications')">
+            My Applications
+        </button>
+
+        <button type="button" onclick="loadSection('profile')">
+            My Profile
+        </button>
+
+        <button type="button" onclick="loadSection('skills')">
+            My Skills
+        </button>
+
+        <button type="button" onclick="loadSection('interviews')">
+            Interviews
+        </button>
+
+        <button type="button" onclick="loadSection('grievances')">
+            Grievances
+        </button>
+
+        <button type="button" onclick="loadSection('notifications')">
+            Notifications
+        </button>
+
+        <button type="button" class="logout" onclick="logout()">
+            Logout
+        </button>
+    </nav>
+
+    <main>
+        <div class="welcome">
+            <h2>Welcome, {{ user.name | e }}!</h2>
+            <p>
+                View placement opportunities, track applications,
+                manage your skills, check notifications and access
+                campus services.
+            </p>
+        </div>
+
+        <div class="cards">
+            <div class="card clickable-card"
+                 onclick="loadSection('drives')">
+                <h3>Placement Drives</h3>
+                <p>Explore available company placement drives.</p>
+            </div>
+
+            <div class="card clickable-card"
+                 onclick="loadSection('applications')">
+                <h3>My Applications</h3>
+                <p>View your submitted placement applications.</p>
+            </div>
+
+            <div class="card clickable-card"
+                 onclick="loadSection('profile')">
+                <h3>Student Profile</h3>
+                <p>View your student profile details.</p>
+            </div>
+
+            <div class="card clickable-card"
+                 onclick="loadSection('skills')">
+                <h3>My Skills</h3>
+                <p>See your registered technical skills.</p>
+            </div>
+
+            <div class="card clickable-card"
+                 onclick="loadSection('interviews')">
+                <h3>Interview Experiences</h3>
+                <p>Browse experiences by company.</p>
+            </div>
+
+            <div class="card clickable-card"
+                 onclick="loadSection('grievances')">
+                <h3>Grievances</h3>
+                <p>Track grievances you have submitted.</p>
+            </div>
+
+            <div class="card clickable-card"
+                 onclick="loadSection('notifications')">
+                <h3>Notifications</h3>
+                <p>View placement updates and campus notifications.</p>
+            </div>
+        </div>
+
+        <section id="content" aria-live="polite">
+            <h2>Student Dashboard</h2>
+            <p>Select a section above to view your information.</p>
+        </section>
+    </main>
+
+    <script>
+        const csrfToken = {{ csrf_token() | tojson }};
+
+        const endpoints = {
+            drives: "/api/drives/",
+            applications: "/api/applications/my-applications",
+            profile: "/api/students/profile",
+            skills: "/api/skills/my-skills",
+            grievances: "/api/grievances/mine",
+            notifications: "/api/notifications/"
+        };
+
+        const titles = {
+            drives: "Placement Drives",
+            applications: "My Applications",
+            profile: "My Profile",
+            skills: "My Skills",
+            interviews: "Interview Experiences",
+            grievances: "My Grievances",
+            notifications: "My Notifications"
+        };
+
+        function showHome() {
+            const content = document.getElementById("content");
+            content.replaceChildren();
+
+            const heading = document.createElement("h2");
+            heading.textContent = "Student Dashboard";
+
+            const paragraph = document.createElement("p");
+            paragraph.textContent =
+                "Select a section above to view your information.";
+
+            content.append(heading, paragraph);
+        }
+
+        function renderValue(value) {
+            if (value === null || value === undefined) {
+                return "Not available";
+            }
+
+            if (typeof value === "object") {
+                return JSON.stringify(value, null, 2);
+            }
+
+            return String(value);
+        }
+
+        function createDataElement(value) {
+            const pre = document.createElement("pre");
+            pre.textContent = renderValue(value);
+            return pre;
+        }
+
+        function showError(content, message) {
+            const error = document.createElement("p");
+            error.className = "error";
+            error.textContent = message;
+            content.appendChild(error);
+        }
+
+        function renderNotifications(content, notifications) {
+            if (!Array.isArray(notifications)) {
+                showError(
+                    content,
+                    "The server returned an unexpected notification response."
+                );
+                return;
+            }
+
+            if (notifications.length === 0) {
+                const empty = document.createElement("p");
+                empty.className = "empty-message";
+                empty.textContent = "You have no notifications.";
+                content.appendChild(empty);
+                return;
+            }
+
+            notifications.forEach(notification => {
+                const card = document.createElement("div");
+                card.className = "card";
+
+                const heading = document.createElement("h3");
+                heading.textContent =
+                    notification.title || "Notification";
+                card.appendChild(heading);
+
+                const message = document.createElement("p");
+                message.textContent = notification.message || "";
+                card.appendChild(message);
+
+                if (notification.notification_type) {
+                    const type = document.createElement("p");
+                    type.textContent =
+                        "Type: " + notification.notification_type;
+                    card.appendChild(type);
+                }
+
+                const date = document.createElement("p");
+
+                if (notification.created_at) {
+                    const parsedDate = new Date(notification.created_at);
+
+                    date.textContent = Number.isNaN(parsedDate.getTime())
+                        ? "Date unavailable"
+                        : "Received: " + parsedDate.toLocaleString();
+                } else {
+                    date.textContent = "Date unavailable";
+                }
+
+                card.appendChild(date);
+
+                const status = document.createElement("span");
+                status.className = notification.is_read
+                    ? "notification-status read"
+                    : "notification-status unread";
+
+                status.textContent = notification.is_read
+                    ? "Read"
+                    : "Unread";
+
+                card.appendChild(status);
+
+                if (!notification.is_read) {
+                    const button = document.createElement("button");
+                    button.type = "button";
+                    button.textContent = "Mark as read";
+                    button.style.display = "block";
+                    button.style.marginTop = "14px";
+
+                    button.addEventListener("click", async () => {
+                        button.disabled = true;
+                        button.textContent = "Updating...";
+
+                        try {
+                            const response = await fetch(
+                                `/api/notifications/${encodeURIComponent(
+                                    notification.id
+                                )}/read`,
+                                {
+                                    method: "PUT",
+                                    credentials: "same-origin",
+                                    headers: {
+                                        "X-CSRFToken": csrfToken
+                                    }
+                                }
+                            );
+
+                            const result = await response.json();
+
+                            if (!response.ok) {
+                                showError(
+                                    content,
+                                    result.error ||
+                                    "Unable to mark notification as read."
+                                );
+
+                                button.disabled = false;
+                                button.textContent = "Mark as read";
+                                return;
+                            }
+
+                            await loadSection("notifications");
+                        } catch (error) {
+                            showError(
+                                content,
+                                "Unable to connect to the server. Please try again."
+                            );
+
+                            button.disabled = false;
+                            button.textContent = "Mark as read";
+                        }
+                    });
+
+                    card.appendChild(button);
+                }
+
+                content.appendChild(card);
+            });
+        }
+
+
+        function addInterviewText(parent, tag, text, className = "") {
+            const element = document.createElement(tag);
+            element.textContent = text ?? "";
+            if (className) {
+                element.className = className;
+            }
+            parent.appendChild(element);
+            return element;
+        }
+
+        async function loadInterviews(content) {
+            const loading = addInterviewText(
+                content, "p", "Loading companies..."
+            );
+
+            try {
+                const response = await fetch("/api/companies/", {
+                    credentials: "same-origin"
+                });
+                const companies = await response.json();
+
+                if (!response.ok) {
+                    loading.remove();
+                    showError(
+                        content,
+                        companies.error || "Unable to load companies."
+                    );
+                    return;
+                }
+
+                loading.remove();
+
+                if (!Array.isArray(companies) || companies.length === 0) {
+                    addInterviewText(
+                        content, "p",
+                        "No companies are available yet.",
+                        "empty-message"
+                    );
+                    return;
+                }
+
+                const label = addInterviewText(
+                    content, "label", "Select a company"
+                );
+                label.htmlFor = "interview-company";
+
+                const selector = document.createElement("select");
+                selector.id = "interview-company";
+                selector.style.display = "block";
+                selector.style.width = "100%";
+                selector.style.maxWidth = "450px";
+                selector.style.padding = "10px";
+                selector.style.margin = "10px 0 20px";
+                selector.style.borderRadius = "6px";
+                selector.style.border = "1px solid #cbd5e1";
+
+                const firstOption = document.createElement("option");
+                firstOption.value = "";
+                firstOption.textContent = "-- Choose a company --";
+                selector.appendChild(firstOption);
+
+                companies.forEach(company => {
+                    const option = document.createElement("option");
+                    option.value = String(company.id);
+                    option.textContent = company.name || "Unnamed company";
+                    selector.appendChild(option);
+                });
+
+                content.appendChild(selector);
+
+                const results = document.createElement("div");
+                results.id = "interview-results";
+                content.appendChild(results);
+
+                selector.addEventListener("change", async () => {
+                    results.replaceChildren();
+
+                    if (!selector.value) {
+                        return;
+                    }
+
+                    await loadCompanyInterviews(
+                        selector.value, results
+                    );
+                });
+            } catch (error) {
+                loading.textContent =
+                    "Unable to connect to the server while loading companies.";
+                loading.className = "error";
+            }
+        }
+
+        async function loadCompanyInterviews(companyId, results) {
+            results.replaceChildren();
+
+            const loading = addInterviewText(
+                results, "p", "Loading interview experiences..."
+            );
+
+            try {
+                const response = await fetch(
+                    `/api/interviews/company/${encodeURIComponent(companyId)}`,
+                    { credentials: "same-origin" }
+                );
+                const experiences = await response.json();
+
+                loading.remove();
+
+                if (!response.ok) {
+                    showError(
+                        results,
+                        experiences.error ||
+                        "Unable to load interview experiences."
+                    );
+                    return;
+                }
+
+                const actions = document.createElement("div");
+                actions.style.display = "flex";
+                actions.style.flexWrap = "wrap";
+                actions.style.gap = "10px";
+                actions.style.marginBottom = "20px";
+
+                const intelligenceButton = document.createElement("button");
+                intelligenceButton.type = "button";
+                intelligenceButton.textContent =
+                    "View Company Interview Insights";
+                intelligenceButton.addEventListener("click", () => {
+                    loadInterviewIntelligence(companyId, results);
+                });
+                actions.appendChild(intelligenceButton);
+                results.appendChild(actions);
+
+                addInterviewText(results, "h3", "Interview Experiences");
+
+                if (!Array.isArray(experiences) ||
+                    experiences.length === 0) {
+                    addInterviewText(
+                        results, "p",
+                        "No interview experiences have been recorded for this company.",
+                        "empty-message"
+                    );
+                    return;
+                }
+
+                experiences.forEach(experience => {
+                    const card = document.createElement("div");
+                    card.className = "card";
+
+                    addInterviewText(
+                        card, "h3",
+                        experience.job_role || "Role not specified"
+                    );
+                    addInterviewText(
+                        card, "p",
+                        "Year: " + (experience.year ?? "Not available")
+                    );
+                    addInterviewText(
+                        card, "p",
+                        "Selection status: " +
+                        (experience.selection_status || "Not available")
+                    );
+                    addInterviewText(
+                        card, "p",
+                        "Difficulty: " +
+                        (experience.overall_difficulty || "Not available")
+                    );
+                    addInterviewText(
+                        card, "p",
+                        "Interview rounds: " +
+                        (experience.round_count ?? 0)
+                    );
+
+                    const detailsButton = document.createElement("button");
+                    detailsButton.type = "button";
+                    detailsButton.textContent = "View Full Details";
+                    detailsButton.addEventListener("click", () => {
+                        loadInterviewDetails(experience.id, results);
+                    });
+                    card.appendChild(detailsButton);
+                    results.appendChild(card);
+                });
+            } catch (error) {
+                loading.textContent =
+                    "Unable to connect to the server while loading interviews.";
+                loading.className = "error";
+            }
+        }
+
+        async function loadInterviewDetails(experienceId, results) {
+            const existingDetails =
+                document.getElementById("interview-detail-panel");
+
+            if (existingDetails) {
+                existingDetails.remove();
+            }
+
+            const panel = document.createElement("section");
+            panel.id = "interview-detail-panel";
+            panel.className = "card";
+            results.appendChild(panel);
+
+            addInterviewText(panel, "h3", "Interview Details");
+            const loading = addInterviewText(
+                panel, "p", "Loading full interview details..."
+            );
+
+            try {
+                const response = await fetch(
+                    `/api/interviews/${encodeURIComponent(experienceId)}`,
+                    { credentials: "same-origin" }
+                );
+                const data = await response.json();
+                loading.remove();
+
+                if (!response.ok) {
+                    showError(
+                        panel,
+                        data.error || "Unable to load interview details."
+                    );
+                    return;
+                }
+
+                addInterviewText(
+                    panel, "p", "Company: " +
+                    (data.company_name || "Not available")
+                );
+                addInterviewText(
+                    panel, "p", "Role: " +
+                    (data.job_role || "Not available")
+                );
+                addInterviewText(
+                    panel, "p", "Year: " +
+                    (data.year ?? "Not available")
+                );
+                addInterviewText(
+                    panel, "p", "Selection status: " +
+                    (data.selection_status || "Not available")
+                );
+                addInterviewText(
+                    panel, "p", "Overall difficulty: " +
+                    (data.overall_difficulty || "Not available")
+                );
+                addInterviewText(
+                    panel, "h4", "Preparation Summary"
+                );
+                addInterviewText(
+                    panel, "p",
+                    data.preparation_summary || "No preparation summary provided."
+                );
+                addInterviewText(
+                    panel, "h4", "Reported Selection Factors"
+                );
+                addInterviewText(
+                    panel, "p",
+                    data.student_reported_selection_factors ||
+                    "No selection factors provided."
+                );
+
+                addInterviewText(panel, "h4", "Interview Rounds");
+
+                if (!Array.isArray(data.rounds) || data.rounds.length === 0) {
+                    addInterviewText(
+                        panel, "p", "No round details recorded.",
+                        "empty-message"
+                    );
+                } else {
+                    data.rounds.forEach(round => {
+                        const roundCard = document.createElement("div");
+                        roundCard.className = "card";
+
+                        addInterviewText(
+                            roundCard, "h4",
+                            "Round " + (round.round_number ?? "") +
+                            ": " + (round.round_type || "Unspecified")
+                        );
+                        addInterviewText(
+                            roundCard, "p",
+                            "Mode: " + (round.mode || "Not available")
+                        );
+                        addInterviewText(
+                            roundCard, "p",
+                            "Duration: " +
+                            (round.duration_minutes ?? "Not available") +
+                            " minutes"
+                        );
+                        addInterviewText(
+                            roundCard, "p",
+                            "Difficulty: " +
+                            (round.difficulty || "Not available")
+                        );
+
+                        if (round.remarks) {
+                            addInterviewText(
+                                roundCard, "p", "Remarks: " + round.remarks
+                            );
+                        }
+
+                        addInterviewText(roundCard, "h5", "Questions");
+
+                        if (!Array.isArray(round.questions) ||
+                            round.questions.length === 0) {
+                            addInterviewText(
+                                roundCard, "p", "No questions recorded."
+                            );
+                        } else {
+                            round.questions.forEach(question => {
+                                const questionCard =
+                                    document.createElement("div");
+                                questionCard.style.marginBottom = "12px";
+
+                                addInterviewText(
+                                    questionCard, "p",
+                                    question.question_text || "Question not provided"
+                                );
+                                addInterviewText(
+                                    questionCard, "p",
+                                    "Topic: " + (question.topic || "Not specified") +
+                                    " | Difficulty: " +
+                                    (question.difficulty || "Not specified")
+                                );
+
+                                if (Array.isArray(question.answers)) {
+                                    question.answers.forEach(answer => {
+                                        addInterviewText(
+                                            questionCard, "p",
+                                            "Student answer: " +
+                                            (answer.student_answer || "Not provided")
+                                        );
+                                        addInterviewText(
+                                            questionCard, "p",
+                                            "Answer status: " +
+                                            (answer.answer_status || "Not specified")
+                                        );
+
+                                        if (answer.reference_answer) {
+                                            addInterviewText(
+                                                questionCard, "p",
+                                                "Reference answer: " +
+                                                answer.reference_answer
+                                            );
+                                        }
+                                    });
+                                }
+
+                                questionCard.style.borderBottom =
+                                    "1px solid #e0e7f0";
+                                questionCard.style.paddingBottom = "8px";
+                                roundCard.appendChild(questionCard);
+                            });
+                        }
+
+                        panel.appendChild(roundCard);
+                    });
+                }
+
+                addInterviewText(panel, "h4", "Related Skills");
+                if (Array.isArray(data.skills) && data.skills.length) {
+                    data.skills.forEach(skill => {
+                        addInterviewText(
+                            panel, "p",
+                            (skill.skill_name || "Skill") +
+                            " — importance: " +
+                            (skill.importance_rating ?? "Not rated")
+                        );
+                    });
+                } else {
+                    addInterviewText(panel, "p", "No skills recorded.");
+                }
+
+                addInterviewText(panel, "h4", "Preparation Resources");
+                if (Array.isArray(data.resources) && data.resources.length) {
+                    data.resources.forEach(resource => {
+                        const item = document.createElement("div");
+                        addInterviewText(
+                            item, "p",
+                            (resource.resource_type || "Resource") +
+                            ": " + (resource.resource_name || "Unnamed resource")
+                        );
+
+                        if (resource.description) {
+                            addInterviewText(
+                                item, "p", resource.description
+                            );
+                        }
+
+                        if (resource.url) {
+                            try {
+                                const parsedUrl = new URL(resource.url);
+                                if (["http:", "https:"].includes(parsedUrl.protocol)) {
+                                    const link = document.createElement("a");
+                                    link.href = parsedUrl.href;
+                                    link.target = "_blank";
+                                    link.rel = "noopener noreferrer";
+                                    link.textContent = "Open resource";
+                                    item.appendChild(link);
+                                }
+                            } catch (error) {
+                                // Ignore invalid resource URLs.
+                            }
+                        }
+
+                        panel.appendChild(item);
+                    });
+                } else {
+                    addInterviewText(panel, "p", "No resources recorded.");
+                }
+            } catch (error) {
+                loading.textContent =
+                    "Unable to connect to the server while loading interview details.";
+                loading.className = "error";
+            }
+        }
+
+        async function loadInterviewIntelligence(companyId, results) {
+            let panel = document.getElementById("interview-intelligence-panel");
+
+            if (!panel) {
+                panel = document.createElement("section");
+                panel.id = "interview-intelligence-panel";
+                panel.className = "card";
+                results.prepend(panel);
+            }
+
+            panel.replaceChildren();
+            addInterviewText(panel, "h3", "Company Interview Insights");
+
+            const loading = addInterviewText(
+                panel, "p", "Loading company insights..."
+            );
+
+            try {
+                const response = await fetch(
+                    `/api/intelligence/company/${encodeURIComponent(companyId)}`,
+                    { credentials: "same-origin" }
+                );
+                const data = await response.json();
+                loading.remove();
+
+                if (!response.ok) {
+                    showError(
+                        panel,
+                        data.error || "Unable to load company insights."
+                    );
+                    return;
+                }
+
+                addInterviewText(
+                    panel, "p", "Company: " +
+                    (data.company_name || "Not available")
+                );
+                addInterviewText(
+                    panel, "p", "Total experiences: " +
+                    (data.total_experiences ?? 0)
+                );
+
+                if (data.total_experiences === 0) {
+                    addInterviewText(
+                        panel, "p",
+                        data.message || "No interview insights are available yet.",
+                        "empty-message"
+                    );
+                    return;
+                }
+
+                addInterviewText(
+                    panel, "p", "Selected reports: " +
+                    (data.selected_count ?? 0)
+                );
+                addInterviewText(
+                    panel, "p", "Not selected reports: " +
+                    (data.not_selected_count ?? 0)
+                );
+                addInterviewText(
+                    panel, "p", "Average difficulty: " +
+                    (data.average_difficulty_score ?? "Not available")
+                );
+
+                if (data.average_difficulty_note) {
+                    addInterviewText(
+                        panel, "p", data.average_difficulty_note
+                    );
+                }
+
+                addInterviewText(panel, "h4", "Round Type Distribution");
+                if (data.round_type_distribution &&
+                    Object.keys(data.round_type_distribution).length) {
+                    Object.entries(data.round_type_distribution).forEach(
+                        ([roundType, count]) => {
+                            addInterviewText(
+                                panel, "p", roundType + ": " + count
+                            );
+                        }
+                    );
+                } else {
+                    addInterviewText(
+                        panel, "p", "No round distribution data available."
+                    );
+                }
+
+                addInterviewText(panel, "h4", "Frequently Asked Questions");
+                if (Array.isArray(data.frequently_asked_questions) &&
+                    data.frequently_asked_questions.length) {
+                    data.frequently_asked_questions.forEach(item => {
+                        addInterviewText(
+                            panel, "p",
+                            (item.question || "Question not specified") +
+                            " — mentioned " +
+                            (item.times_mentioned ?? 0) + " time(s)"
+                        );
+                    });
+                } else {
+                    addInterviewText(
+                        panel, "p", "No frequently asked questions recorded."
+                    );
+                }
+
+                addInterviewText(panel, "h4", "Frequently Required Skills");
+                if (Array.isArray(data.frequently_required_skills) &&
+                    data.frequently_required_skills.length) {
+                    data.frequently_required_skills.forEach(item => {
+                        addInterviewText(
+                            panel, "p",
+                            (item.skill || "Skill not specified") +
+                            " — mentioned " +
+                            (item.times_mentioned ?? 0) + " time(s)"
+                        );
+                    });
+                } else {
+                    addInterviewText(
+                        panel, "p", "No frequently required skills recorded."
+                    );
+                }
+            } catch (error) {
+                loading.textContent =
+                    "Unable to connect to the server while loading company insights.";
+                loading.className = "error";
+            }
+        }
+
+        async function loadSection(section) {
+            const content = document.getElementById("content");
+            content.replaceChildren();
+
+            const heading = document.createElement("h2");
+            heading.textContent = titles[section] || "Dashboard";
+            content.appendChild(heading);
+
+            if (section === "interviews") {
+                await loadInterviews(content);
+                return;
+            }
+
+            const loading = document.createElement("p");
+            loading.textContent = "Loading...";
+            content.appendChild(loading);
+
+            try {
+                const response = await fetch(endpoints[section], {
+                    credentials: "same-origin"
+                });
+
+                const data = await response.json();
+                loading.remove();
+
+                if (!response.ok) {
+                    showError(
+                        content,
+                        data.error || "Unable to load this section."
+                    );
+                    return;
+                }
+
+                if (section === "notifications") {
+                    renderNotifications(content, data);
+                } else {
+                    content.appendChild(createDataElement(data));
+                }
+            } catch (error) {
+                loading.textContent =
+                    "Unable to connect to the server.";
+                loading.className = "error";
+            }
+        }
+
+        async function logout() {
+            try {
+                const response = await fetch("/api/auth/logout", {
+                    method: "POST",
+                    credentials: "same-origin",
+                    headers: {
+                        "X-CSRFToken": csrfToken
+                    }
+                });
+
+                if (!response.ok) {
+                    alert("Logout failed. Please try again.");
+                    return;
+                }
+
+                window.location.href = "/api/auth/login-page";
+            } catch (error) {
+                alert("Unable to connect to the server.");
+            }
+        }
+    </script>
+</body>
+</html>
