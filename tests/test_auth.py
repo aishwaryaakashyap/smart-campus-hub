@@ -95,6 +95,63 @@ class AuthRegistrationTests(unittest.TestCase):
         mock_commit.assert_not_called()
 
 
+    def test_rejects_invalid_email_format(self):
+        response = self.client.post(
+            '/api/auth/register',
+            json={
+                'name': 'Test Student',
+                'email': 'not-an-email',
+                'password': 'TestPass123',
+                'role': 'student'
+            }
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('email', response.get_json()['error'].lower())
+
+    def test_rejects_name_longer_than_database_limit(self):
+        response = self.client.post(
+            '/api/auth/register',
+            json={
+                'name': 'N' * 101,
+                'email': 'length-test@example.com',
+                'password': 'TestPass123',
+                'role': 'student'
+            }
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('name', response.get_json()['error'].lower())
+
+    def test_rejects_email_longer_than_database_limit(self):
+        response = self.client.post(
+            '/api/auth/register',
+            json={
+                'name': 'Test Student',
+                'email': ('a' * 110) + '@example.com',
+                'password': 'TestPass123',
+                'role': 'student'
+            }
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('email', response.get_json()['error'].lower())
+
+    def test_rejects_password_longer_than_supported_limit(self):
+        response = self.client.post(
+            '/api/auth/register',
+            json={
+                'name': 'Test Student',
+                'email': 'long-password@example.com',
+                'password': 'P' * 200,
+                'role': 'student'
+            }
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('password', response.get_json()['error'].lower())
+
+
 class AuthLoginTests(unittest.TestCase):
 
     def setUp(self):

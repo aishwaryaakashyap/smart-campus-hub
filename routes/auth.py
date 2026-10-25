@@ -1,3 +1,4 @@
+import re
 from flask import (
     Blueprint, request, jsonify, session,
     render_template, redirect, url_for
@@ -40,17 +41,41 @@ def register():
             'error': 'Name, email, and password must be strings'
         }), 400
 
-    if not data['name'].strip() or not data['email'].strip():
+    name = data['name'].strip()
+    raw_email = data['email'].strip()
+    password = data['password']
+
+    if not name or not raw_email:
         return jsonify({
             'error': 'Name and email cannot be blank'
         }), 400
 
-    if len(data['password']) < 8:
+    if len(name) > 100:
+        return jsonify({
+            'error': 'Name must be 100 characters or fewer'
+        }), 400
+
+    if len(raw_email) > 120:
+        return jsonify({
+            'error': 'Email must be 120 characters or fewer'
+        }), 400
+
+    if not re.fullmatch(r'[^@\s]+@[^@\s]+\.[^@\s]+', raw_email):
+        return jsonify({
+            'error': 'Please provide a valid email address'
+        }), 400
+
+    if len(password) < 8:
         return jsonify({
             'error': 'Password must be at least 8 characters long'
         }), 400
 
-    email = data['email'].strip().lower()
+    if len(password) > 128:
+        return jsonify({
+            'error': 'Password must be 128 characters or fewer'
+        }), 400
+
+    email = raw_email.lower()
 
     existing_user = User.query.filter_by(email=email).first()
 
