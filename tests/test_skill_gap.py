@@ -144,5 +144,17 @@ class SkillGapAnalysisTests(unittest.TestCase):
         )
 
 
+    def test_returns_none_percentage_when_no_skills_are_required(self):
+        result = analyze_skill_gap(
+            "Good communication skills are helpful.",
+            [],
+            [{"name": "Python"}, {"name": "SQL"}],
+        )
+
+        self.assertEqual(result["total_required_skills"], 0)
+        self.assertIsNone(result["match_percentage"])
+        self.assertEqual(result["missing_skills"], [])
+
 if __name__ == "__main__":
     unittest.main()
+
