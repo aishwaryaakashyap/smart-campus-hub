@@ -4,6 +4,13 @@ from datetime import datetime
 class Application(db.Model):
     __tablename__ = 'applications'
 
+    __table_args__ = (
+        db.UniqueConstraint(
+            'student_id', 'drive_id',
+            name='uq_application_student_drive'
+        ),
+    )
+
     id = db.Column(db.Integer, primary_key=True)
     student_id = db.Column(db.Integer, db.ForeignKey('students.id'), nullable=False)
     drive_id = db.Column(db.Integer, db.ForeignKey('placement_drives.id'), nullable=False)
