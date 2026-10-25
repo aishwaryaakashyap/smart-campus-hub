@@ -1,5 +1,7 @@
 
 from flask import Blueprint, request, jsonify, session
+from sqlalchemy.exc import SQLAlchemyError
+
 from extensions import db
 from models import Application, Student, PlacementDrive
 from services.eligibility import check_eligibility
@@ -10,10 +12,7 @@ application_bp = Blueprint('application', __name__)
 
 def require_student():
     if 'user_id' not in session:
-        return None, (
-            jsonify({'error': 'Not logged in'}),
-            401
-        )
+        return None, (jsonify({'error': 'Not logged in'}), 401)
 
     if session.get('role') != 'student':
         return None, (
@@ -36,6 +35,25 @@ def require_student():
     return student, None
 
 
+def get_json_object():
+    """Ensure the request contains a valid JSON object."""
+    if not request.is_json:
+        return None, (
+            jsonify({'error': 'Content-Type must be application/json'}),
+            415
+        )
+
+    data = request.get_json(silent=True)
+
+    if not isinstance(data, dict):
+        return None, (
+            jsonify({'error': 'Request body must be a valid JSON object'}),
+            400
+        )
+
+    return data, None
+
+
 @application_bp.route(
     '/check-eligibility/<int:drive_id>',
     methods=['GET']
@@ -45,7 +63,8 @@ def check_eligibility_route(drive_id):
     if error:
         return error
 
-    drive = PlacementDrive.query.get(drive_id)
+    drive = db.session.get(PlacementDrive, drive_id)
+
     if not drive:
         return jsonify({'error': 'Placement drive not found'}), 404
 
@@ -65,12 +84,23 @@ def apply():
     if error:
         return error
 
-    data = request.get_json(silent=True) or {}
+    data, error = get_json_object()
+    if error:
+        return error
 
-    if 'drive_id' not in data:
-        return jsonify({'error': 'drive_id is required'}), 400
+    drive_id = data.get('drive_id')
 
-    drive = PlacementDrive.query.get(data['drive_id'])
+    if (
+        isinstance(drive_id, bool)
+        or not isinstance(drive_id, int)
+        or drive_id <= 0
+    ):
+        return jsonify({
+            'error': 'drive_id must be a positive integer'
+        }), 400
+
+    drive = db.session.get(PlacementDrive, drive_id)
+
     if not drive:
         return jsonify({'error': 'Placement drive not found'}), 404
 
@@ -101,8 +131,15 @@ def apply():
         status='Applied'
     )
 
-    db.session.add(new_application)
-    db.session.commit()
+    try:
+        db.session.add(new_application)
+        db.session.commit()
+
+    except SQLAlchemyError:
+        db.session.rollback()
+        return jsonify({
+            'error': 'Unable to submit application at this time'
+        }), 500
 
     return jsonify({
         'message': 'Application submitted successfully',
@@ -148,14 +185,18 @@ def update_status(application_id):
             'error': 'Only coordinators can perform this action'
         }), 403
 
-    application = Application.query.get(application_id)
+    application = db.session.get(Application, application_id)
 
     if not application:
         return jsonify({'error': 'Application not found'}), 404
 
-    data = request.get_json(silent=True) or {}
+    data, error = get_json_object()
+    if error:
+        return error
 
-    valid_statuses = [
+    new_status = data.get('status')
+
+    valid_statuses = {
         'Applied',
         'Under Review',
         'Shortlisted',
@@ -163,26 +204,30 @@ def update_status(application_id):
         'Selected',
         'Not Selected',
         'Withdrawn'
-    ]
+    }
 
     if (
-        'status' not in data
-        or data['status'] not in valid_statuses
+        not isinstance(new_status, str)
+        or new_status not in valid_statuses
     ):
         return jsonify({
-            'error': f'status must be one of {valid_statuses}'
+            'error': 'Invalid status',
+            'valid_statuses': sorted(valid_statuses)
+        }), 400
+
+    remarks = data.get('remarks', application.remarks)
+
+    if remarks is not None and not isinstance(remarks, str):
+        return jsonify({
+            'error': 'remarks must be a string or null'
         }), 400
 
     old_status = application.status
-    new_status = data['status']
-
-    application.status = new_status
-    application.remarks = data.get(
-        'remarks',
-        application.remarks
-    )
 
     try:
+        application.status = new_status
+        application.remarks = remarks
+
         if old_status != new_status:
             create_notification(
                 user_id=application.student.user_id,
@@ -195,6 +240,12 @@ def update_status(application_id):
             )
 
         db.session.commit()
+
+    except SQLAlchemyError:
+        db.session.rollback()
+        return jsonify({
+            'error': 'Unable to update application at this time'
+        }), 500
 
     except Exception:
         db.session.rollback()

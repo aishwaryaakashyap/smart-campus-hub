@@ -168,3 +168,81 @@ class AuthLoginTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class StudentDashboardTests(unittest.TestCase):
+
+    def setUp(self):
+        app.config['TESTING'] = True
+        app.config['WTF_CSRF_ENABLED'] = False
+        self.client = app.test_client()
+
+    def test_unauthenticated_user_redirected(self):
+        response = self.client.get(
+            '/api/auth/student-dashboard'
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(
+            '/api/auth/login-page',
+            response.headers['Location']
+        )
+
+    def test_student_can_access_dashboard(self):
+        mock_user = type(
+            'MockUser',
+            (),
+            {
+                'id': 1,
+                'role': 'student',
+                'name': 'Test Student'
+            }
+        )()
+
+        with self.client.session_transaction() as session:
+            session['user_id'] = 1
+            session['role'] = 'student'
+
+        with patch(
+            'routes.auth.db.session.get',
+            return_value=mock_user
+        ):
+            response = self.client.get(
+                '/api/auth/student-dashboard'
+            )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(
+            b'Test Student',
+            response.data
+        )
+
+    def test_coordinator_cannot_access_student_dashboard(self):
+        with self.client.session_transaction() as session:
+            session['user_id'] = 2
+            session['role'] = 'coordinator'
+
+        response = self.client.get(
+            '/api/auth/student-dashboard'
+        )
+
+        self.assertEqual(response.status_code, 403)
+
+    def test_missing_user_redirects_and_clears_session(self):
+        with self.client.session_transaction() as session:
+            session['user_id'] = 999
+            session['role'] = 'student'
+
+        with patch(
+            'routes.auth.db.session.get',
+            return_value=None
+        ):
+            response = self.client.get(
+                '/api/auth/student-dashboard'
+            )
+
+        self.assertEqual(response.status_code, 302)
+
+        with self.client.session_transaction() as session:
+            self.assertNotIn('user_id', session)
+            self.assertNotIn('role', session)

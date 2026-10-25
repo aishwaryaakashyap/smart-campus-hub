@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>Grievance Management | Smart Campus Hub</title>
+
+    <style>
+        :root {
+            --primary: #4338ca;
+            --primary-light: #eef2ff;
+            --background: #f5f7fb;
+            --surface: #ffffff;
+            --text: #172033;
+            --muted: #64748b;
+            --border: #e2e8f0;
+            --success: #15803d;
+            --warning: #b45309;
+            --danger: #b91c1c;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            font-family: Arial, Helvetica, sans-serif;
+            background: var(--background);
+            color: var(--text);
+        }
+
+        header {
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            padding: 18px 5%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        header h1 { font-size: 21px; margin: 0; }
+        header p { margin: 5px 0 0; color: var(--muted); font-size: 13px; }
+
+        .header-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+        main {
+            width: min(1400px, 94%);
+            margin: 28px auto;
+        }
+
+        .intro { margin-bottom: 22px; }
+        .intro h2 { margin: 0 0 8px; font-size: 27px; }
+        .intro p { color: var(--muted); margin: 0; line-height: 1.5; }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(150px, 1fr));
+            gap: 15px;
+            margin: 22px 0;
+        }
+
+        .stat, .panel {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 20px;
+        }
+
+        .stat-label { color: var(--muted); font-size: 13px; }
+        .stat-value { font-size: 30px; font-weight: 700; margin-top: 10px; }
+
+        .panel { margin-bottom: 22px; }
+        .panel h3 { margin: 0 0 16px; font-size: 18px; }
+
+        .filters {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr auto;
+            gap: 12px;
+            align-items: end;
+        }
+
+        label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 7px;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 11px 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            font: inherit;
+            color: var(--text);
+            background: white;
+        }
+
+        textarea { min-height: 75px; resize: vertical; }
+
+        button, .button-link {
+            border: 0;
+            border-radius: 8px;
+            padding: 11px 14px;
+            font-weight: 600;
+            font-size: 13px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            gap: 6px;
+        }
+
+        button:disabled { opacity: .6; cursor: wait; }
+        .primary { background: var(--primary); color: white; }
+        .secondary { background: var(--primary-light); color: var(--primary); }
+        .neutral { background: #e2e8f0; color: #334155; }
+
+        .table-wrap {
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 1100px;
+            table-layout: auto;
+        }
+
+        th, td {
+            overflow-wrap: anywhere;
+        }
+
+        td:last-child {
+            min-width: 300px;
+        }
+
+        .row-actions {
+            display: grid;
+            grid-template-columns: minmax(150px, 1fr) auto;
+            gap: 9px;
+            min-width: 270px;
+        }
+
+        .row-actions select,
+        .row-actions input {
+            min-width: 0;
+        }
+
+        .row-actions button {
+            white-space: normal;
+        }
+
+        .advisor-help {
+            grid-column: 1 / -1;
+            color: var(--muted);
+            font-size: 12px;
+            margin: 0;
+        }
+
+        th, td {
+            padding: 13px 12px;
+            border-bottom: 1px solid var(--border);
+            text-align: left;
+            vertical-align: top;
+            font-size: 13px;
+        }
+
+        th {
+            color: var(--muted);
+            background: #f8fafc;
+            font-weight: 700;
+        }
+
+        .title-cell { font-weight: 700; margin-bottom: 5px; }
+        .description { color: var(--muted); line-height: 1.45; max-width: 280px; }
+        .small { font-size: 12px; color: var(--muted); margin-top: 5px; }
+
+        .pill {
+            display: inline-block;
+            padding: 5px 9px;
+            border-radius: 999px;
+            background: #f1f5f9;
+            font-size: 11px;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .priority-high { background: #fee2e2; color: #991b1b; }
+        .priority-medium { background: #fef3c7; color: #92400e; }
+        .priority-low { background: #dcfce7; color: #166534; }
+
+        .row-actions { display: flex; flex-direction: column; gap: 8px; min-width: 175px; }
+        .row-actions select, .row-actions input { font-size: 12px; padding: 8px; }
+        .row-actions button { width: 100%; }
+
+        .message {
+            padding: 12px 14px;
+            border-radius: 8px;
+            margin: 0 0 18px;
+            display: none;
+            line-height: 1.45;
+        }
+
+        .message.show { display: block; }
+        .message.error { background: #fee2e2; color: #991b1b; }
+        .message.success { background: #dcfce7; color: #166534; }
+        .empty { text-align: center; padding: 35px; color: var(--muted); }
+
+        .history-list { display: grid; gap: 12px; }
+        .history-item { padding: 14px; border: 1px solid var(--border); border-radius: 9px; }
+        .history-item p { margin: 8px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+        .history-item time { color: var(--muted); font-size: 12px; }
+        .history-item strong { font-size: 13px; }
+
+        dialog {
+            border: 0;
+            border-radius: 14px;
+            width: min(620px, 92%);
+            max-height: 85vh;
+            overflow-y: auto;
+            padding: 24px;
+            box-shadow: 0 20px 60px #0f172a33;
+        }
+
+        dialog::backdrop { background: #0f172a88; }
+        .dialog-header { display: flex; justify-content: space-between; gap: 12px; align-items: start; }
+        .dialog-header h3 { margin: 0 0 8px; }
+        .detail-text { white-space: pre-wrap; line-height: 1.55; overflow-wrap: anywhere; }
+        .close-row { display: flex; justify-content: flex-end; margin-top: 18px; }
+
+        @media (max-width: 850px) {
+            .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .filters { grid-template-columns: 1fr 1fr; }
+        }
+
+        @media (max-width: 520px) {
+            .stats, .filters { grid-template-columns: 1fr; }
+            main { width: 92%; margin-top: 20px; }
+            .intro h2 { font-size: 23px; }
+        }
+    </style>
+</head>
+<body>
+<header>
+    <div>
+        <h1>Smart Campus Hub</h1>
+        <p>Campus grievance management</p>
+    </div>
+    <div class="header-actions">
+        <a class="button-link secondary" href="/api/analytics/dashboard">Placement Analytics</a>
+        <button class="neutral" id="refreshButton" type="button">Refresh Data</button>
+    </div>
+</header>
+
+<main>
+    <section class="intro">
+        <h2>Grievance Management</h2>
+        <p>Welcome, {{ user.name }}. Review campus complaints, assign advisors, track progress, and maintain an update history.</p>
+    </section>
+
+    <div id="message" class="message" role="status" aria-live="polite"></div>
+
+    <section class="stats" aria-label="Grievance summary">
+        <div class="stat">
+            <div class="stat-label">Total grievances</div>
+            <div class="stat-value" id="totalCount">—</div>
+        </div>
+        <div class="stat">
+            <div class="stat-label">Awaiting review</div>
+            <div class="stat-value" id="reviewCount">—</div>
+        </div>
+        <div class="stat">
+            <div class="stat-label">In progress</div>
+            <div class="stat-value" id="progressCount">—</div>
+        </div>
+        <div class="stat">
+            <div class="stat-label">Resolved</div>
+            <div class="stat-value" id="resolvedCount">—</div>
+        </div>
+    </section>
+
+    <section class="panel">
+        <h3>Find grievances</h3>
+        <div class="filters">
+            <div>
+                <label for="searchInput">Search</label>
+                <input id="searchInput" type="search" placeholder="Search title, description, category or ID">
+            </div>
+            <div>
+                <label for="statusFilter">Status</label>
+                <select id="statusFilter">
+                    <option value="">All statuses</option>
+                    <option>Submitted</option>
+                    <option>Under Review</option>
+                    <option>In Progress</option>
+                    <option>Resolved</option>
+                    <option>Rejected</option>
+                </select>
+            </div>
+            <div>
+                <label for="priorityFilter">Priority</label>
+                <select id="priorityFilter">
+                    <option value="">All priorities</option>
+                    <option>High</option>
+                    <option>Medium</option>
+                    <option>Low</option>
+                </select>
+            </div>
+            <button id="clearFilters" class="neutral" type="button">Clear Filters</button>
+        </div>
+    </section>
+
+    <section class="panel">
+        <h3>All grievances</h3>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Grievance</th>
+                        <th>Category</th>
+                        <th>Priority</th>
+                        <th>Status</th>
+                        <th>Assigned advisor</th>
+                        <th>Submitted</th>
+                        <th>Manage</th>
+                    </tr>
+                </thead>
+                <tbody id="grievanceRows">
+                    <tr><td colspan="7" class="empty">Loading grievances…</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+</main>
+
+<dialog id="detailDialog">
+    <div class="dialog-header">
+        <div>
+            <h3 id="detailTitle">Grievance details</h3>
+            <div id="detailMeta" class="small"></div>
+        </div>
+        <button class="neutral" id="closeDetail" type="button">Close</button>
+    </div>
+    <hr style="border:0;border-top:1px solid var(--border);margin:18px 0">
+    <h4>Description</h4>
+    <div id="detailDescription" class="detail-text"></div>
+    <div id="detailLocation" class="small"></div>
+    <h4>Update history</h4>
+    <div id="historyContent" class="history-list">Loading history…</div>
+</dialog>
+
+<script>
+(() => {
+    "use strict";
+
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+    const statuses = [
+        "Submitted", "Under Review", "In Progress", "Resolved", "Rejected"
+    ];
+
+    let grievances = [];
+    let advisors = [];
+
+    const $ = (id) => document.getElementById(id);
+
+    function showMessage(text, type = "success") {
+        const box = $("message");
+        box.textContent = text;
+        box.className = `message show ${type}`;
+        window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function clearMessage() {
+        $("message").className = "message";
+        $("message").textContent = "";
+    }
+
+    async function requestJSON(url, options = {}) {
+        const response = await fetch(url, {
+            credentials: "same-origin",
+            ...options,
+            headers: {
+                ...(options.body ? { "Content-Type": "application/json" } : {}),
+                ...(options.method && options.method !== "GET"
+                    ? { "X-CSRFToken": csrfToken } : {}),
+                ...(options.headers || {})
+            }
+        });
+
+        const text = await response.text();
+        let data = null;
+
+        try {
+            data = text ? JSON.parse(text) : null;
+        } catch {
+            throw new Error(`Unexpected response from server (${response.status}).`);
+        }
+
+        if (!response.ok) {
+            throw new Error(data?.error || `Request failed (${response.status}).`);
+        }
+
+        return data;
+    }
+
+    function makeElement(tag, text, className) {
+        const element = document.createElement(tag);
+        if (text !== undefined && text !== null) {
+            element.textContent = String(text);
+        }
+        if (className) element.className = className;
+        return element;
+    }
+
+    function addOption(select, value, label) {
+        const option = document.createElement("option");
+        option.value = value;
+        option.textContent = label;
+        select.appendChild(option);
+    }
+
+    function statusSelect(currentStatus) {
+        const select = document.createElement("select");
+        select.setAttribute("aria-label", "New grievance status");
+
+        statuses.forEach(status => {
+            addOption(select, status, status);
+        });
+        select.value = statuses.includes(currentStatus) ? currentStatus : "Submitted";
+        return select;
+    }
+
+    function advisorSelect(currentAdvisor) {
+        const select = document.createElement("select");
+        select.setAttribute("aria-label", "Assign advisor");
+        addOption(
+            select,
+            "",
+            advisors.length ? "Select an advisor" : "No advisors available"
+        );
+
+        advisors.forEach(advisor => {
+            addOption(select, String(advisor.id), advisor.name);
+        });
+
+        select.disabled = advisors.length === 0;
+        if (!advisors.length) {
+            select.title = "Create an advisor account before assigning grievances.";
+        }
+
+        select.value = currentAdvisor ? String(currentAdvisor) : "";
+        return select;
+    }
+
+    function updateSummary() {
+        $("totalCount").textContent = grievances.length;
+        $("reviewCount").textContent = grievances.filter(
+            item => item.status === "Submitted" || item.status === "Under Review"
+        ).length;
+        $("progressCount").textContent = grievances.filter(
+            item => item.status === "In Progress"
+        ).length;
+        $("resolvedCount").textContent = grievances.filter(
+            item => item.status === "Resolved"
+        ).length;
+    }
+
+    function renderGrievances() {
+        updateSummary();
+
+        const query = $("searchInput").value.trim().toLowerCase();
+        const selectedStatus = $("statusFilter").value;
+        const selectedPriority = $("priorityFilter").value;
+
+        const filtered = grievances.filter(item => {
+            const searchText = [
+                item.id, item.title, item.description,
+                item.category, item.location
+            ].filter(Boolean).join(" ").toLowerCase();
+
+            return (!query || searchText.includes(query))
+                && (!selectedStatus || item.status === selectedStatus)
+                && (!selectedPriority || item.priority === selectedPriority);
+        });
+
+        const tbody = $("grievanceRows");
+        tbody.replaceChildren();
+
+        if (!filtered.length) {
+            const row = document.createElement("tr");
+            const cell = makeElement(
+                "td",
+                grievances.length ? "No grievances match these filters." : "No grievances found.",
+                "empty"
+            );
+            cell.colSpan = 7;
+            row.appendChild(cell);
+            tbody.appendChild(row);
+            return;
+        }
+
+        filtered.forEach(item => {
+            const row = document.createElement("tr");
+
+            const titleCell = document.createElement("td");
+            titleCell.appendChild(makeElement("div", `#${item.id} · ${item.title}`, "title-cell"));
+            titleCell.appendChild(makeElement(
+                "div", item.description || "No description provided.", "description"
+            ));
+            row.appendChild(titleCell);
+
+            row.appendChild(makeElement("td", item.category || "—"));
+
+            const priorityCell = document.createElement("td");
+            const priorityClass = item.priority === "High" ? "priority-high"
+                : item.priority === "Low" ? "priority-low" : "priority-medium";
+            priorityCell.appendChild(makeElement("span", item.priority || "Medium", `pill ${priorityClass}`));
+            row.appendChild(priorityCell);
+
+            row.appendChild(makeElement("td", item.status || "Submitted"));
+
+            const advisorCell = document.createElement("td");
+            const advisor = advisors.find(a => a.id === item.assigned_to);
+            advisorCell.textContent = advisor ? advisor.name : "Unassigned";
+            row.appendChild(advisorCell);
+
+            const created = item.created_at
+                ? new Date(item.created_at).toLocaleString()
+                : "—";
+            row.appendChild(makeElement("td", created));
+
+            const actionsCell = document.createElement("td");
+            const actions = makeElement("div", undefined, "row-actions");
+
+            const assignment = advisorSelect(item.assigned_to);
+            const assignButton = makeElement("button", "Assign advisor", "secondary");
+            assignButton.type = "button";
+            assignButton.disabled = advisors.length === 0;
+            if (!advisors.length) {
+                assignButton.title = "No advisor accounts are available.";
+            }
+
+            assignButton.addEventListener("click", async () => {
+                if (!assignment.value) {
+                    showMessage("Select an advisor before assigning this grievance.", "error");
+                    return;
+                }
+                assignButton.disabled = true;
+                try {
+                    await requestJSON(`/api/grievances/${item.id}/assign`, {
+                        method: "PUT",
+                        body: JSON.stringify({ advisor_id: Number(assignment.value) })
+                    });
+                    showMessage(`Grievance #${item.id} assigned successfully.`);
+                    await loadData(false);
+                } catch (error) {
+                    showMessage(error.message, "error");
+                } finally {
+                    assignButton.disabled = false;
+                }
+            });
+
+            const status = statusSelect(item.status);
+            const comment = document.createElement("input");
+            comment.type = "text";
+            comment.maxLength = 1000;
+            comment.placeholder = "Update comment (optional)";
+            comment.setAttribute("aria-label", "Status update comment");
+
+            const updateButton = makeElement("button", "Update status", "primary");
+            updateButton.type = "button";
+            updateButton.addEventListener("click", async () => {
+                updateButton.disabled = true;
+                try {
+                    await requestJSON(`/api/grievances/${item.id}/status`, {
+                        method: "PUT",
+                        body: JSON.stringify({
+                            status: status.value,
+                            comment: comment.value
+                        })
+                    });
+                    showMessage(`Status for grievance #${item.id} updated.`);
+                    await loadData(false);
+                } catch (error) {
+                    showMessage(error.message, "error");
+                } finally {
+                    updateButton.disabled = false;
+                }
+            });
+
+            const historyButton = makeElement("button", "View details & history", "neutral");
+            historyButton.type = "button";
+            historyButton.addEventListener("click", () => openHistory(item));
+
+            actions.append(assignment, assignButton);
+
+            if (!advisors.length) {
+                actions.appendChild(makeElement(
+                    "p",
+                    "No advisor accounts are available. Add an advisor account to enable assignment.",
+                    "advisor-help"
+                ));
+            }
+
+            actions.append(status, comment, updateButton, historyButton);
+            actionsCell.appendChild(actions);
+            row.appendChild(actionsCell);
+            tbody.appendChild(row);
+        });
+    }
+
+    async function openHistory(item) {
+        $("detailTitle").textContent = `#${item.id} · ${item.title}`;
+        $("detailMeta").textContent =
+            `${item.category || "Uncategorised"} · ${item.priority || "Medium"} · ${item.status}`;
+        $("detailDescription").textContent = item.description || "No description provided.";
+        $("detailLocation").textContent = item.location ? `Location: ${item.location}` : "";
+        $("historyContent").textContent = "Loading history…";
+        $("detailDialog").showModal();
+
+        try {
+            const history = await requestJSON(
+                `/api/grievances/manage/${item.id}/history`
+            );
+            const content = $("historyContent");
+            content.replaceChildren();
+
+            if (!history.length) {
+                content.appendChild(makeElement("div", "No status updates have been recorded yet.", "small"));
+                return;
+            }
+
+            history.forEach(entry => {
+                const card = makeElement("div", undefined, "history-item");
+                const transition = entry.old_status
+                    ? `${entry.old_status} → ${entry.new_status}`
+                    : `Status: ${entry.new_status}`;
+
+                card.appendChild(makeElement("strong", transition));
+                card.appendChild(makeElement(
+                    "div", `Updated by user #${entry.updated_by}`, "small"
+                ));
+
+                if (entry.created_at) {
+                    const time = makeElement("time", new Date(entry.created_at).toLocaleString());
+                    card.appendChild(time);
+                }
+
+                if (entry.comment) {
+                    card.appendChild(makeElement("p", entry.comment));
+                }
+                content.appendChild(card);
+            });
+        } catch (error) {
+            $("historyContent").replaceChildren(
+                makeElement("div", error.message, "message show error")
+            );
+        }
+    }
+
+    async function loadData(showSuccess = false) {
+        $("refreshButton").disabled = true;
+        clearMessage();
+
+        try {
+            const results = await Promise.all([
+                requestJSON("/api/grievances/manage"),
+                requestJSON("/api/grievances/advisors")
+            ]);
+
+            grievances = results[0];
+            advisors = results[1];
+            renderGrievances();
+
+            if (showSuccess) showMessage("Grievance data refreshed successfully.");
+        } catch (error) {
+            showMessage(error.message, "error");
+            $("grievanceRows").replaceChildren();
+            const row = document.createElement("tr");
+            const cell = makeElement("td", error.message, "empty");
+            cell.colSpan = 7;
+            row.appendChild(cell);
+            $("grievanceRows").appendChild(row);
+        } finally {
+            $("refreshButton").disabled = false;
+        }
+    }
+
+    $("refreshButton").addEventListener("click", () => loadData(true));
+    $("searchInput").addEventListener("input", renderGrievances);
+    $("statusFilter").addEventListener("change", renderGrievances);
+    $("priorityFilter").addEventListener("change", renderGrievances);
+
+    $("clearFilters").addEventListener("click", () => {
+        $("searchInput").value = "";
+        $("statusFilter").value = "";
+        $("priorityFilter").value = "";
+        renderGrievances();
+    });
+
+    $("closeDetail").addEventListener("click", () => $("detailDialog").close());
+
+    loadData();
+})();
+</script>
+</body>
+</html>
