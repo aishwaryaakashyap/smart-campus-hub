@@ -1011,6 +1011,22 @@
                         panel, "p", "No frequently required skills recorded."
                     );
                 }
+                addInterviewText(panel, "h4", "Preparation Recommendations");
+                (data.preparation_recommendations || []).forEach(item => {
+                    addInterviewText(panel, "h5", (item.priority || "Medium") + " Priority: " + (item.title || "Preparation"));
+                    if (item.reason) addInterviewText(panel, "p", item.reason);
+                });
+
+                addInterviewText(panel, "h4", "Recommended Topics");
+                (data.recommended_topics || []).forEach(item => {
+                    addInterviewText(panel, "p", (item.topic || "Topic") + " - mentioned " + (item.times_mentioned ?? 0) + " time(s)");
+                });
+
+                addInterviewText(panel, "h4", "Skill Priorities");
+                (data.skill_priorities || []).forEach(item => {
+                    const rating = item.average_importance_rating;
+                    addInterviewText(panel, "p", (item.skill || "Skill") + " - importance: " + (rating == null ? "Not rated" : rating + "/5") + ", mentioned " + (item.times_mentioned ?? 0) + " time(s)");
+                });
             } catch (error) {
                 loading.textContent =
                     "Unable to connect to the server while loading company insights.";

@@ -10,7 +10,7 @@ class Config:
     SQLALCHEMY_DATABASE_URI = os.environ.get("DATABASE_URL")
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
-       SESSION_COOKIE_SAMESITE = "Lax"
+    SESSION_COOKIE_SAMESITE = "Lax"
 
     # Enable secure session cookies for HTTPS production deployments.
     # Keep disabled by default for local HTTP development.

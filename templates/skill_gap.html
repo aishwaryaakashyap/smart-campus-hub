@@ -1,4 +1,4 @@
-```html
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -13,25 +13,24 @@
             font-family: Arial, sans-serif;
             color: #1e293b;
         }
-        .navbar {
-            background: #172554;
-            color: white;
-        }
+
+        .navbar { background: #172554; }
+
         .hero {
             background: linear-gradient(120deg, #1d4ed8, #4338ca);
             color: white;
             border-radius: 18px;
             padding: 30px;
         }
+
         .card {
             border: none;
             border-radius: 16px;
             box-shadow: 0 5px 20px rgba(15, 23, 42, .06);
         }
-        .stat {
-            font-size: 30px;
-            font-weight: 700;
-        }
+
+        .stat { font-size: 30px; font-weight: 700; }
+
         .skill {
             display: inline-block;
             margin: 5px 4px 5px 0;
@@ -39,33 +38,44 @@
             border-radius: 9px;
             font-size: 13px;
         }
-        .skill-card {
-            border-top: 4px solid #2563eb;
-        }
-        .matched-card {
-            border-top-color: #16a34a;
-        }
-        .missing-card {
-            border-top-color: #dc2626;
-        }
+
+        .skill-card { border-top: 4px solid #2563eb; }
+        .matched-card { border-top-color: #16a34a; }
+        .missing-card { border-top-color: #dc2626; }
+
         .section-title {
             font-weight: 700;
             margin-bottom: 18px;
         }
-        .recommendation {
-            background: #eff6ff;
-            border-left: 4px solid #2563eb;
-            padding: 15px;
+
+        .priority-card {
+            padding: 16px;
             border-radius: 10px;
-            margin-bottom: 10px;
+            margin-bottom: 12px;
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-left: 5px solid #64748b;
         }
-        .progress {
-            height: 13px;
+
+        .priority-high { border-left-color: #dc2626; }
+        .priority-medium { border-left-color: #d97706; }
+        .priority-low { border-left-color: #16a34a; }
+
+        .priority-label {
+            display: inline-block;
+            padding: 5px 10px;
             border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-bottom: 8px;
         }
-        .progress-bar {
-            transition: width .5s ease;
-        }
+
+        .label-high { background: #fee2e2; color: #991b1b; }
+        .label-medium { background: #fef3c7; color: #92400e; }
+        .label-low { background: #dcfce7; color: #166534; }
+
+        .progress { height: 13px; border-radius: 20px; }
+
         footer {
             color: #64748b;
             font-size: 13px;
@@ -76,9 +86,7 @@
 <body>
 <nav class="navbar py-3">
     <div class="container">
-        <span class="navbar-brand text-white fw-bold">
-            Smart Campus Hub
-        </span>
+        <span class="navbar-brand text-white fw-bold">Smart Campus Hub</span>
         <span class="text-white-50">Student Portal</span>
     </div>
 </nav>
@@ -96,6 +104,7 @@
     <div class="card p-4 mb-4">
         <h4 class="section-title">Analyze a Placement Drive</h4>
         <label for="driveId" class="form-label">Placement Drive ID</label>
+
         <div class="row g-2">
             <div class="col-md-9">
                 <input id="driveId" class="form-control form-control-lg"
@@ -108,6 +117,7 @@
                 </button>
             </div>
         </div>
+
         <p id="error" class="text-danger mt-3 mb-0" role="alert"></p>
     </div>
 
@@ -119,17 +129,20 @@
                     <h2 id="jobRole" class="fw-bold"></h2>
                     <p id="summary" class="text-secondary mb-0"></p>
                 </div>
+
                 <div class="col-md-5">
                     <div class="d-flex justify-content-between align-items-center mb-2">
                         <span class="fw-semibold">Your skill match</span>
-                        <span id="percentage" class="stat text-primary">—</span>
+                        <span id="percentage" class="stat text-primary">N/A</span>
                     </div>
+
                     <div class="progress">
                         <div id="progress" class="progress-bar bg-primary"
                              role="progressbar" style="width:0%"
                              aria-valuemin="0" aria-valuemax="100"
                              aria-valuenow="0"></div>
                     </div>
+
                     <p class="text-secondary small mt-2 mb-0">
                         Improve your match by learning the missing skills.
                     </p>
@@ -164,22 +177,35 @@
         </div>
 
         <div class="card p-4 mb-4">
-            <h4 class="section-title">Recommended Learning Plan</h4>
+            <h4 class="section-title">Skill-Learning Priorities</h4>
             <p class="text-secondary">
-                Start with these suggested topics based on your missing skills.
+                Learn the most important missing skills first.
+                Priorities are based on the placement job description.
             </p>
+
+            <div class="d-flex flex-wrap gap-2 mb-3">
+                <span class="priority-label label-high">High Priority</span>
+                <span class="priority-label label-medium">Medium Priority</span>
+                <span class="priority-label label-low">Low Priority</span>
+            </div>
+
             <div id="recommendations"></div>
+        </div>
+
+        <div class="card p-4 mb-4">
+            <h5 class="section-title">About This Analysis</h5>
+            <p id="method" class="text-secondary mb-0"></p>
         </div>
     </div>
 
     <footer class="text-center mt-5">
-        Smart Campus Hub · Placement Skill Gap Analysis
+        Smart Campus Hub - Placement Skill Gap Analysis
     </footer>
 </main>
 
 <script>
 async function analyzeSkills() {
-    const driveId = document.getElementById("driveId").value;
+    const driveId = document.getElementById("driveId").value.trim();
     const error = document.getElementById("error");
     const button = document.getElementById("analyzeBtn");
     const results = document.getElementById("results");
@@ -187,7 +213,8 @@ async function analyzeSkills() {
     error.textContent = "";
     results.hidden = true;
 
-    if (!driveId || Number(driveId) < 1) {
+    if (!driveId || !Number.isInteger(Number(driveId)) ||
+        Number(driveId) < 1) {
         error.textContent = "Please enter a valid placement drive ID.";
         return;
     }
@@ -207,11 +234,17 @@ async function analyzeSkills() {
             throw new Error(data.error || "Unable to analyze skills.");
         }
 
-        document.getElementById("jobRole").textContent = data.job_role;
+        const required = data.required_skills || [];
+        const matched = data.matched_skills || [];
+        const missing = data.missing_skills || [];
+
+        document.getElementById("jobRole").textContent =
+            data.job_role || "Placement Role";
 
         const percentage = data.match_percentage;
         document.getElementById("percentage").textContent =
-            percentage === null ? "N/A" : `${percentage}%`;
+            percentage === null || percentage === undefined
+                ? "N/A" : `${percentage}%`;
 
         const safePercentage = Math.max(
             0, Math.min(100, Number(percentage) || 0)
@@ -222,14 +255,14 @@ async function analyzeSkills() {
         progress.setAttribute("aria-valuenow", safePercentage);
 
         document.getElementById("summary").textContent =
-            `${data.matched_skills.length} matched out of ` +
-            `${data.total_required_skills} required skills.`;
+            `${matched.length} matched out of ` +
+            `${data.total_required_skills ?? required.length} required skills.`;
 
         function renderSkills(elementId, skills, color) {
             const container = document.getElementById(elementId);
             container.replaceChildren();
 
-            if (!skills || skills.length === 0) {
+            if (!skills.length) {
                 container.textContent = "No skills to display.";
                 return;
             }
@@ -242,46 +275,78 @@ async function analyzeSkills() {
             });
         }
 
-        renderSkills("required", data.required_skills, "primary");
-        renderSkills("matched", data.matched_skills, "success");
-        renderSkills("missing", data.missing_skills, "danger");
+        renderSkills("required", required, "primary");
+        renderSkills("matched", matched, "success");
+        renderSkills("missing", missing, "danger");
 
-        const recommendations = document.getElementById("recommendations");
-        recommendations.replaceChildren();
+        renderLearningPriorities(data, missing);
 
-        if (!data.missing_skills || data.missing_skills.length === 0) {
-            recommendations.textContent =
-                "Excellent! You have matched all the required skills.";
-        } else {
-            data.missing_skills.forEach((skill, index) => {
-                const item = document.createElement("div");
-                item.className = "recommendation";
-
-                const heading = document.createElement("strong");
-                heading.textContent = `${index + 1}. Learn ${skill}`;
-
-                const detail = document.createElement("p");
-                detail.className = "mb-0 mt-1 text-secondary";
-                detail.textContent =
-                    `Study the fundamentals of ${skill} and practise with a small project.`;
-
-                item.append(heading, detail);
-                recommendations.appendChild(item);
-            });
-        }
+        document.getElementById("method").textContent =
+            data.method || "Skill matching based on the job description.";
 
         results.hidden = false;
+
     } catch (err) {
-        error.textContent = err.message +
-            (err.message === "Failed to fetch"
-                ? " Check that Flask is running and reload the page."
-                : "");
+        error.textContent = err.message === "Failed to fetch"
+            ? "Could not connect to the server. Check that Flask is running and try again."
+            : err.message;
     } finally {
         button.disabled = false;
         button.textContent = "Analyze Skills";
     }
 }
+
+function renderLearningPriorities(data, missingSkills) {
+    const container = document.getElementById("recommendations");
+    container.replaceChildren();
+
+    if (!missingSkills.length) {
+        container.textContent =
+            "Excellent! You have matched all the required skills.";
+        return;
+    }
+
+    let priorities = Array.isArray(data.learning_priorities)
+        ? data.learning_priorities : [];
+
+    if (priorities.length === 0) {
+        priorities = missingSkills.map(skill => ({
+            skill_name: skill,
+            priority: "Medium",
+            suggestion: `Add ${skill} to your learning plan and practise it with a small project.`
+        }));
+    }
+
+    const order = { High: 1, Medium: 2, Low: 3 };
+
+    priorities.sort((a, b) =>
+        (order[a.priority] || 2) - (order[b.priority] || 2)
+    );
+
+    priorities.forEach((item, index) => {
+        const priority = ["High", "Medium", "Low"].includes(item.priority)
+            ? item.priority : "Medium";
+
+        const card = document.createElement("div");
+        card.className = `priority-card priority-${priority.toLowerCase()}`;
+
+        const label = document.createElement("span");
+        label.className = `priority-label label-${priority.toLowerCase()}`;
+        label.textContent = `${priority} Priority`;
+
+        const heading = document.createElement("h5");
+        heading.className = "fw-bold mt-1";
+        heading.textContent = `${index + 1}. ${item.skill_name || "Skill"}`;
+
+        const suggestion = document.createElement("p");
+        suggestion.className = "text-secondary mb-0";
+        suggestion.textContent = item.suggestion ||
+            "Add this skill to your learning plan and practise it.";
+
+        card.append(label, heading, suggestion);
+        container.appendChild(card);
+    });
+}
 </script>
 </body>
 </html>
-```

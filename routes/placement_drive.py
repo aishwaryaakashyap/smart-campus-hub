@@ -40,6 +40,13 @@ def create_drive():
                 'error': f'{field} is required'
             }), 400
 
+    if not isinstance(data['job_role'], str) or not data['job_role'].strip():
+        return jsonify({
+            'error': 'job_role must be a non-empty string'
+        }), 400
+
+    data['job_role'] = data['job_role'].strip()
+
     company = Company.query.get(data['company_id'])
 
     if not company:

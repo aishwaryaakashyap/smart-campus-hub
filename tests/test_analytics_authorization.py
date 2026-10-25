@@ -1,4 +1,3 @@
-
 import unittest
 
 from app import app
@@ -7,61 +6,44 @@ from app import app
 class AnalyticsAuthorizationTests(unittest.TestCase):
 
     def setUp(self):
+        self.previous_testing = app.config.get("TESTING", False)
         app.config["TESTING"] = True
-        app.config["WTF_CSRF_ENABLED"] = False
-        self.app_context = app.app_context()
-        self.app_context.push()
         self.client = app.test_client()
 
+        self.endpoints = [
+            "/api/analytics/placement",
+            "/api/analytics/dashboard",
+            "/api/analytics/advanced",
+        ]
+
     def tearDown(self):
-        self.app_context.pop()
+        app.config["TESTING"] = self.previous_testing
 
-    def set_session(self, user_id=1, role="student"):
+    def test_all_analytics_endpoints_reject_unauthenticated_users(self):
+        for endpoint in self.endpoints:
+            with self.subTest(endpoint=endpoint):
+                response = self.client.get(endpoint)
+
+                self.assertEqual(response.status_code, 401)
+                self.assertEqual(
+                    response.get_json()["error"],
+                    "Not logged in"
+                )
+
+    def test_all_analytics_endpoints_reject_students(self):
         with self.client.session_transaction() as session:
-            session["user_id"] = user_id
-            session["role"] = role
+            session["user_id"] = 1
+            session["role"] = "student"
 
-    def test_placement_analytics_rejects_unauthenticated_user(self):
-        response = self.client.get("/api/analytics/placement")
-        self.assertEqual(response.status_code, 401)
-        self.assertEqual(response.get_json()["error"], "Not logged in")
+        for endpoint in self.endpoints:
+            with self.subTest(endpoint=endpoint):
+                response = self.client.get(endpoint)
 
-    def test_placement_analytics_rejects_student(self):
-        self.set_session(role="student")
-        response = self.client.get("/api/analytics/placement")
-        self.assertEqual(response.status_code, 403)
-        self.assertEqual(
-            response.get_json()["error"],
-            "Only coordinators can view placement analytics",
-        )
-
-    def test_analytics_dashboard_rejects_unauthenticated_user(self):
-        response = self.client.get("/api/analytics/dashboard")
-        self.assertEqual(response.status_code, 401)
-        self.assertEqual(response.get_json()["error"], "Not logged in")
-
-    def test_analytics_dashboard_rejects_student(self):
-        self.set_session(role="student")
-        response = self.client.get("/api/analytics/dashboard")
-        self.assertEqual(response.status_code, 403)
-        self.assertEqual(
-            response.get_json()["error"],
-            "Only coordinators can view placement analytics",
-        )
-
-    def test_advanced_analytics_rejects_unauthenticated_user(self):
-        response = self.client.get("/api/analytics/advanced")
-        self.assertEqual(response.status_code, 401)
-        self.assertEqual(response.get_json()["error"], "Not logged in")
-
-    def test_advanced_analytics_rejects_student(self):
-        self.set_session(role="student")
-        response = self.client.get("/api/analytics/advanced")
-        self.assertEqual(response.status_code, 403)
-        self.assertEqual(
-            response.get_json()["error"],
-            "Only coordinators can view placement analytics",
-        )
+                self.assertEqual(response.status_code, 403)
+                self.assertEqual(
+                    response.get_json()["error"],
+                    "Only coordinators can view placement analytics"
+                )
 
 
 if __name__ == "__main__":
