@@ -1,4 +1,3 @@
-
 <!doctype html>
 <html lang="en">
   <head>
@@ -108,7 +107,6 @@
         <div class="col-lg-6">
           <div class="chart-card">
             <h4>Application Status</h4>
-
             <div class="chart-container">
               <canvas id="applicationStatusChart"></canvas>
             </div>
@@ -118,7 +116,6 @@
         <div class="col-lg-6">
           <div class="chart-card">
             <h4>Company Analytics</h4>
-
             <div class="table-responsive">
               <table class="table table-striped">
                 <thead>
@@ -130,7 +127,6 @@
                     <th>Selection Rate</th>
                   </tr>
                 </thead>
-
                 <tbody id="companyTable"></tbody>
               </table>
             </div>
@@ -178,7 +174,6 @@
         <div class="col-lg-6">
           <div class="chart-card">
             <h4>Interview Round Distribution</h4>
-
             <div class="chart-container">
               <canvas id="roundChart"></canvas>
             </div>
@@ -188,7 +183,6 @@
         <div class="col-lg-6">
           <div class="chart-card">
             <h4>Interview Difficulty</h4>
-
             <div class="chart-container">
               <canvas id="difficultyChart"></canvas>
             </div>
@@ -202,7 +196,6 @@
         <div class="col-lg-6">
           <div class="chart-card">
             <h4>Student Skill Proficiency</h4>
-
             <div class="chart-container">
               <canvas id="proficiencyChart"></canvas>
             </div>
@@ -212,7 +205,6 @@
         <div class="col-lg-6">
           <div class="chart-card">
             <h4>Frequently Occurring Interview Skills</h4>
-
             <div class="table-responsive">
               <table class="table table-striped">
                 <thead>
@@ -221,7 +213,6 @@
                     <th>Times Mentioned</th>
                   </tr>
                 </thead>
-
                 <tbody id="interviewSkillTable"></tbody>
               </table>
             </div>
@@ -235,7 +226,6 @@
         <div class="col-12">
           <div class="chart-card">
             <h4>Frequently Asked Interview Questions</h4>
-
             <div class="table-responsive">
               <table class="table table-striped">
                 <thead>
@@ -244,7 +234,6 @@
                     <th>Times Mentioned</th>
                   </tr>
                 </thead>
-
                 <tbody id="questionTable"></tbody>
               </table>
             </div>
@@ -260,7 +249,6 @@
         <div class="col-lg-4">
           <div class="chart-card">
             <h4>Grievance Categories</h4>
-
             <div class="chart-container">
               <canvas id="grievanceCategoryChart"></canvas>
             </div>
@@ -270,7 +258,6 @@
         <div class="col-lg-4">
           <div class="chart-card">
             <h4>Grievance Priority</h4>
-
             <div class="chart-container">
               <canvas id="grievancePriorityChart"></canvas>
             </div>
@@ -280,7 +267,6 @@
         <div class="col-lg-4">
           <div class="chart-card">
             <h4>Grievance Status</h4>
-
             <div class="chart-container">
               <canvas id="grievanceStatusChart"></canvas>
             </div>
@@ -308,7 +294,7 @@
         </div>
       </div>
 
-      <div id="error"></div>
+      <div id="error" role="alert"></div>
     </div>
 
     <script>
@@ -320,7 +306,15 @@
       let grievancePriorityChart;
       let grievanceStatusChart;
 
-      function createChart(chartId, type, labels, values) {
+      // Create a chart with an optional dataset label.
+      // Dataset labels prevent "undefined" from appearing in legends.
+      function createChart(
+        chartId,
+        type,
+        labels,
+        values,
+        datasetLabel = ""
+      ) {
         const canvas = document.getElementById(chartId);
 
         if (!canvas) {
@@ -333,6 +327,7 @@
             labels: labels,
             datasets: [
               {
+                label: datasetLabel,
                 data: values,
               },
             ],
@@ -346,7 +341,9 @@
 
       // ==================== PLACEMENT ANALYTICS ====================
 
-      fetch("/api/analytics/placement")
+      fetch("/api/analytics/placement", {
+        credentials: "same-origin",
+      })
         .then((response) => {
           if (!response.ok) {
             throw new Error("Unable to load placement analytics");
@@ -354,7 +351,6 @@
 
           return response.json();
         })
-
         .then((data) => {
           document.getElementById("students").textContent =
             data.total_students;
@@ -374,15 +370,12 @@
           document.getElementById("selectionRate").textContent =
             data.selection_rate_percent + "%";
 
-          const statusLabels = Object.keys(data.application_status_counts);
-
-          const statusValues = Object.values(data.application_status_counts);
-
           applicationStatusChart = createChart(
             "applicationStatusChart",
             "bar",
-            statusLabels,
-            statusValues,
+            Object.keys(data.application_status_counts),
+            Object.values(data.application_status_counts),
+            "Applications"
           );
 
           const companyTable = document.getElementById("companyTable");
@@ -390,7 +383,6 @@
           data.company_analytics.forEach((company) => {
             const row = document.createElement("tr");
 
-            // Render company data as text, never as HTML.
             const values = [
               company.company_name,
               company.drive_count,
@@ -408,14 +400,15 @@
             companyTable.appendChild(row);
           });
         })
-
         .catch((error) => {
           document.getElementById("error").textContent = error.message;
         });
 
       // ==================== ADVANCED ANALYTICS ====================
 
-      fetch("/api/analytics/advanced")
+      fetch("/api/analytics/advanced", {
+        credentials: "same-origin",
+      })
         .then((response) => {
           if (!response.ok) {
             throw new Error("Unable to load advanced analytics");
@@ -423,7 +416,6 @@
 
           return response.json();
         })
-
         .then((data) => {
           const interview = data.interview;
           const studentSkills = data.student_skills;
@@ -451,15 +443,17 @@
             "bar",
             Object.keys(interview.round_type_distribution),
             Object.values(interview.round_type_distribution),
+            "Interview Rounds"
           );
 
-          // Difficulty chart
+          // Interview difficulty chart
 
           difficultyChart = createChart(
             "difficultyChart",
             "doughnut",
             Object.keys(interview.difficulty_distribution),
             Object.values(interview.difficulty_distribution),
+            "Difficulty"
           );
 
           // Student proficiency chart
@@ -469,6 +463,7 @@
             "bar",
             Object.keys(studentSkills.proficiency_distribution),
             Object.values(studentSkills.proficiency_distribution),
+            "Student Skills"
           );
 
           // Frequently asked questions
@@ -478,7 +473,6 @@
           interview.frequently_asked_questions.forEach((item) => {
             const row = document.createElement("tr");
 
-            // Use textContent so question text cannot execute as HTML.
             const questionCell = document.createElement("td");
             questionCell.textContent = String(item.question ?? "");
 
@@ -494,13 +488,12 @@
           // Frequently required interview skills
 
           const interviewSkillTable = document.getElementById(
-            "interviewSkillTable",
+            "interviewSkillTable"
           );
 
           interview.frequently_required_skills.forEach((item) => {
             const row = document.createElement("tr");
 
-            // Use textContent so skill names cannot execute as HTML.
             const skillCell = document.createElement("td");
             skillCell.textContent = String(item.skill ?? "");
 
@@ -513,38 +506,46 @@
             interviewSkillTable.appendChild(row);
           });
 
-          // Grievance charts
+          // Grievance category chart
 
           grievanceCategoryChart = createChart(
             "grievanceCategoryChart",
             "doughnut",
             Object.keys(grievances.category_distribution),
             Object.values(grievances.category_distribution),
+            "Categories"
           );
+
+          // Grievance priority chart — fixed legend label
 
           grievancePriorityChart = createChart(
             "grievancePriorityChart",
             "bar",
             Object.keys(grievances.priority_distribution),
             Object.values(grievances.priority_distribution),
+            "Priority"
           );
+
+          // Grievance status chart — fixed legend label
 
           grievanceStatusChart = createChart(
             "grievanceStatusChart",
             "bar",
             Object.keys(grievances.status_distribution),
             Object.values(grievances.status_distribution),
+            "Status"
           );
 
           // CGPA statistics
 
           document.getElementById("averageCgpa").textContent =
-            readiness.average_cgpa !== null ? readiness.average_cgpa : "-";
+            readiness.average_cgpa !== null
+              ? readiness.average_cgpa
+              : "-";
 
           document.getElementById("studentsWithCgpa").textContent =
             readiness.students_with_cgpa;
         })
-
         .catch((error) => {
           document.getElementById("error").textContent = error.message;
         });

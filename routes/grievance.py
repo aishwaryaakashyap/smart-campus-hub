@@ -467,3 +467,67 @@ def get_grievance_history(grievance_id):
         }
         for update in updates
     ]), 200
+
+
+
+@grievance_bp.route('/advisors', methods=['GET'])
+def get_grievance_advisors():
+    """List advisors for coordinator assignment."""
+    user_id = session.get('user_id')
+
+    if not user_id:
+        return jsonify({'error': 'Not logged in'}), 401
+
+    if session.get('role') != 'coordinator':
+        return jsonify({
+            'error': 'Only coordinators can view available advisors'
+        }), 403
+
+    advisors = User.query.filter_by(role='advisor').order_by(
+        User.name.asc()
+    ).all()
+
+    return jsonify([
+        {'id': advisor.id, 'name': advisor.name, 'email': advisor.email}
+        for advisor in advisors
+    ]), 200
+
+
+@grievance_bp.route('/manage/<int:grievance_id>/history', methods=['GET'])
+def get_managed_grievance_history(grievance_id):
+    """View history as a coordinator or the assigned advisor."""
+    user_id = session.get('user_id')
+    role = session.get('role')
+
+    if not user_id:
+        return jsonify({'error': 'Not logged in'}), 401
+
+    if role not in ('coordinator', 'advisor'):
+        return jsonify({
+            'error': 'Only coordinators and advisors can view this history'
+        }), 403
+
+    grievance = db.session.get(Grievance, grievance_id)
+
+    if not grievance:
+        return jsonify({'error': 'Grievance not found'}), 404
+
+    if role == 'advisor' and grievance.assigned_to != user_id:
+        return jsonify({
+            'error': 'You can view only grievances assigned to you'
+        }), 403
+
+    updates = GrievanceUpdate.query.filter_by(
+        grievance_id=grievance.id
+    ).order_by(GrievanceUpdate.created_at.asc()).all()
+
+    return jsonify([
+        {
+            'old_status': update.old_status,
+            'new_status': update.new_status,
+            'comment': update.comment,
+            'created_at': update.created_at.isoformat(),
+            'updated_by': update.updated_by
+        }
+        for update in updates
+    ]), 200
