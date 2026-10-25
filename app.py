@@ -92,6 +92,26 @@ def skill_gap_page():
     return render_template("skill_gap.html")
 
 
+@app.route("/coordinator/grievances")
+def coordinator_grievances_page():
+    from flask import jsonify, redirect, session, url_for
+
+    if not session.get("user_id"):
+        return redirect(url_for("auth.login_page"))
+
+    if session.get("role") != "coordinator":
+        return jsonify({
+            "error": "Only coordinators can access grievance management"
+        }), 403
+
+    user = db.session.get(User, session["user_id"])
+    if not user or user.role != "coordinator":
+        session.clear()
+        return redirect(url_for("auth.login_page"))
+
+    return render_template("coordinator_grievances.html", user=user)
+
+
 if __name__ == "__main__":
     with app.app_context():
         db.create_all()
