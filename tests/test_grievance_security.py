@@ -9,16 +9,22 @@ def client():
     previous_csrf = app_module.app.config.get(
         "WTF_CSRF_ENABLED", True
     )
-    previous_testing = app_module.app.config.get("TESTING", False)
+    previous_testing = app_module.app.config.get(
+        "TESTING", False
+    )
 
-    app_module.app.config["TESTING"] = True
-    app_module.app.config["WTF_CSRF_ENABLED"] = False
+    try:
+        # Apply test configuration before yielding the client.
+        app_module.app.config["TESTING"] = True
+        app_module.app.config["WTF_CSRF_ENABLED"] = False
 
-    with app_module.app.app_context():
-        yield app_module.app.test_client()
+        with app_module.app.app_context():
+            yield app_module.app.test_client()
 
-    app_module.app.config["WTF_CSRF_ENABLED"] = previous_csrf
-    app_module.app.config["TESTING"] = previous_testing
+    finally:
+        # Always restore the original application settings.
+        app_module.app.config["WTF_CSRF_ENABLED"] = previous_csrf
+        app_module.app.config["TESTING"] = previous_testing
 
 
 def test_unauthenticated_user_cannot_submit_grievance(client):
