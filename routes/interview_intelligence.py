@@ -1,7 +1,7 @@
 
 from collections import Counter, defaultdict
 
-from flask import Blueprint, jsonify
+from flask import Blueprint, jsonify, session
 
 from models import Company, InterviewExperience
 
@@ -53,12 +53,24 @@ def build_preparation_recommendations(
     if round_type_counter:
         round_type, count = round_type_counter.most_common(1)[0]
         round_advice = {
-            "Aptitude": "Practise quantitative, logical reasoning, and verbal questions.",
-            "Coding": "Solve coding problems and practise explaining your approach.",
-            "Technical": "Revise core concepts, projects, and technical fundamentals.",
-            "HR": "Practise your introduction, strengths, and behavioural questions.",
-            "Group Discussion": "Practise clear communication and respectful discussion.",
-            "Managerial": "Prepare examples of teamwork, decisions, and problem-solving.",
+            "Aptitude": (
+                "Practise quantitative, logical reasoning, and verbal questions."
+            ),
+            "Coding": (
+                "Solve coding problems and practise explaining your approach."
+            ),
+            "Technical": (
+                "Revise core concepts, projects, and technical fundamentals."
+            ),
+            "Hr": (
+                "Practise your introduction, strengths, and behavioural questions."
+            ),
+            "Group Discussion": (
+                "Practise clear communication and respectful discussion."
+            ),
+            "Managerial": (
+                "Prepare examples of teamwork, decisions, and problem-solving."
+            ),
         }
         advice = round_advice.get(
             round_type,
@@ -109,6 +121,15 @@ def build_preparation_recommendations(
 
 @intelligence_bp.route("/company/<int:company_id>", methods=["GET"])
 def company_intelligence(company_id):
+    # Only authenticated students can access interview intelligence.
+    if "user_id" not in session:
+        return jsonify({"error": "Not logged in"}), 401
+
+    if session.get("role") != "student":
+        return jsonify({
+            "error": "Only students can view interview intelligence"
+        }), 403
+
     company = Company.query.get(company_id)
 
     if not company:
@@ -229,7 +250,10 @@ def company_intelligence(company_id):
             "skill": skill,
             "times_mentioned": count,
             "average_importance_rating": (
-                round(sum(skill_importance[skill]) / len(skill_importance[skill]), 2)
+                round(
+                    sum(skill_importance[skill]) / len(skill_importance[skill]),
+                    2,
+                )
                 if skill_importance[skill] else None
             ),
         }
