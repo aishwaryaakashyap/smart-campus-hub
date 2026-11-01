@@ -186,3 +186,68 @@ def test_advisor_cannot_update_unassigned_grievance(client):
     assert response.get_json()["error"] == (
         "You can update only grievances assigned to you"
     )
+
+
+def test_advisor_can_only_list_assigned_grievances(client):
+    with client.session_transaction() as session:
+        session["user_id"] = 11
+        session["role"] = "advisor"
+
+    with patch("routes.grievance.Grievance.query") as grievance_query:
+        grievance_query.filter_by.return_value.order_by.return_value.all.return_value = []
+
+        response = client.get("/api/grievances/manage")
+
+    assert response.status_code == 200
+    assert response.get_json() == []
+    grievance_query.filter_by.assert_called_once_with(assigned_to=11)
+
+
+def test_advisor_cannot_view_unassigned_grievance_history(client):
+    grievance = MagicMock()
+    grievance.id = 1
+    grievance.assigned_to = 22
+
+    with client.session_transaction() as session:
+        session["user_id"] = 11
+        session["role"] = "advisor"
+
+    with patch(
+        "routes.grievance.db.session.get",
+        return_value=grievance
+    ):
+        response = client.get("/api/grievances/manage/1/history")
+
+    assert response.status_code == 403
+    assert response.get_json()["error"] == (
+        "You can view only grievances assigned to you"
+    )
+
+
+def test_advisor_cannot_assign_grievances(client):
+    with client.session_transaction() as session:
+        session["user_id"] = 11
+        session["role"] = "advisor"
+
+    response = client.put(
+        "/api/grievances/1/assign",
+        json={"advisor_id": 22}
+    )
+
+    assert response.status_code == 403
+    assert response.get_json()["error"] == (
+        "Only coordinators can assign grievances"
+    )
+
+
+def test_student_cannot_access_advisor_dashboard(client):
+    with client.session_transaction() as session:
+        session["user_id"] = 11
+        session["role"] = "student"
+
+    response = client.get("/advisor/dashboard")
+
+    assert response.status_code == 403
+    assert response.get_json()["error"] == (
+        "Only advisors can access the advisor dashboard"
+    )
