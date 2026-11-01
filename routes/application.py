@@ -1,6 +1,6 @@
 
 from flask import Blueprint, request, jsonify, session
-from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 
 from extensions import db
 from models import Application, Student, PlacementDrive
@@ -134,6 +134,19 @@ def apply():
     try:
         db.session.add(new_application)
         db.session.commit()
+
+    except IntegrityError as exc:
+        db.session.rollback()
+        original_error = getattr(exc, 'orig', None)
+        error_args = getattr(original_error, 'args', ())
+        if error_args and error_args[0] == 1062:
+            return jsonify({
+                'error': 'You have already applied to this drive'
+            }), 409
+
+        return jsonify({
+            'error': 'Unable to submit application at this time'
+        }), 500
 
     except SQLAlchemyError:
         db.session.rollback()
