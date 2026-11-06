@@ -35,6 +35,19 @@ def require_student():
     return student, None
 
 
+def require_coordinator():
+    """Check if logged-in user is a coordinator."""
+    if 'user_id' not in session:
+        return jsonify({'error': 'Not logged in'}), 401
+
+    if session.get('role') != 'coordinator':
+        return jsonify({
+            'error': 'Only coordinators can perform this action'
+        }), 403
+
+    return None
+
+
 def get_json_object():
     """Ensure the request contains a valid JSON object."""
     if not request.is_json:
@@ -60,6 +73,7 @@ def get_json_object():
 )
 def check_eligibility_route(drive_id):
     student, error = require_student()
+
     if error:
         return error
 
@@ -81,10 +95,12 @@ def check_eligibility_route(drive_id):
 @application_bp.route('/', methods=['POST'])
 def apply():
     student, error = require_student()
+
     if error:
         return error
 
     data, error = get_json_object()
+
     if error:
         return error
 
@@ -105,23 +121,25 @@ def apply():
         return jsonify({'error': 'Placement drive not found'}), 404
 
     if drive.status != 'Open':
-        return jsonify({'error': 'This placement drive is closed'}), 400
+        return jsonify({
+            'error': 'This placement drive is closed'
+        }), 400
 
-    existing = Application.query.filter_by(
+    existing_application = Application.query.filter_by(
         student_id=student.id,
         drive_id=drive.id
     ).first()
 
-    if existing:
+    if existing_application:
         return jsonify({
-            'error': 'You have already applied to this drive'
+            'error': 'You have already applied for this drive'
         }), 409
 
     is_eligible, reasons = check_eligibility(student, drive)
 
     if not is_eligible:
         return jsonify({
-            'error': 'You are not eligible for this drive',
+            'error': 'You are not eligible for this placement drive',
             'reasons': reasons
         }), 403
 
@@ -137,11 +155,14 @@ def apply():
 
     except IntegrityError as exc:
         db.session.rollback()
+
         original_error = getattr(exc, 'orig', None)
         error_args = getattr(original_error, 'args', ())
+
+        # MySQL duplicate entry error
         if error_args and error_args[0] == 1062:
             return jsonify({
-                'error': 'You have already applied to this drive'
+                'error': 'You have already applied for this drive'
             }), 409
 
         return jsonify({
@@ -164,6 +185,7 @@ def apply():
 @application_bp.route('/my-applications', methods=['GET'])
 def my_applications():
     student, error = require_student()
+
     if error:
         return error
 
@@ -185,18 +207,55 @@ def my_applications():
     return jsonify(result), 200
 
 
+@application_bp.route('/manage', methods=['GET'])
+def manage_applications():
+    """List all placement applications for coordinators."""
+
+    auth_error = require_coordinator()
+
+    if auth_error:
+        return auth_error
+
+    applications = Application.query.order_by(
+        Application.applied_date.desc()
+    ).all()
+
+    result = []
+
+    for application in applications:
+        student = application.student
+        drive = application.drive
+
+        result.append({
+            'application_id': application.id,
+            'student_name': student.user.name,
+            'student_email': student.user.email,
+            'register_number': student.register_number,
+            'branch': student.branch,
+            'semester': student.semester,
+            'cgpa': student.cgpa,
+            'company_name': drive.company.name,
+            'job_role': drive.job_role,
+            'status': application.status,
+            'applied_date': (
+                application.applied_date.isoformat()
+                if application.applied_date else None
+            ),
+            'remarks': application.remarks
+        })
+
+    return jsonify(result), 200
+
+
 @application_bp.route(
     '/<int:application_id>/status',
     methods=['PUT']
 )
 def update_status(application_id):
-    if 'user_id' not in session:
-        return jsonify({'error': 'Not logged in'}), 401
+    auth_error = require_coordinator()
 
-    if session.get('role') != 'coordinator':
-        return jsonify({
-            'error': 'Only coordinators can perform this action'
-        }), 403
+    if auth_error:
+        return auth_error
 
     application = db.session.get(Application, application_id)
 
@@ -204,6 +263,7 @@ def update_status(application_id):
         return jsonify({'error': 'Application not found'}), 404
 
     data, error = get_json_object()
+
     if error:
         return error
 
