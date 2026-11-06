@@ -1,75 +1,353 @@
-<!doctype html>
+
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="csrf-token" content="{{ csrf_token() }}" />
-    <title>Smart Campus Hub - Login</title>
-  </head>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>Login | Smart Campus Hub</title>
 
-  <body>
-    <h1>Smart Campus Hub</h1>
-    <h2>Login</h2>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, Helvetica, sans-serif;
+        }
 
-    <form id="loginForm">
-      <label for="email">Email:</label><br />
-      <input type="email" id="email" required /><br /><br />
+        body {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f7f5f5;
+            padding: 20px;
+        }
 
-      <label for="password">Password:</label><br />
-      <input type="password" id="password" required /><br /><br />
+        .login-wrapper {
+            width: 100%;
+            max-width: 1000px;
+            min-height: 570px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            background: #ffffff;
+            border-radius: 18px;
+            overflow: hidden;
+            box-shadow: 0 12px 40px rgba(65, 20, 35, 0.10);
+        }
 
-      <button type="submit">Login</button>
-    </form>
+        .brand-panel {
+            background: linear-gradient(145deg, #641b35, #421024);
+            color: white;
+            padding: 65px 45px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
 
-    <p id="message"></p>
+        .brand-icon {
+            width: 58px;
+            height: 58px;
+            border: 1px solid rgba(255,255,255,0.5);
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 27px;
+            margin-bottom: 30px;
+        }
+
+        .brand-panel h1 {
+            font-size: 34px;
+            line-height: 1.25;
+            margin-bottom: 18px;
+        }
+
+        .brand-panel p {
+            font-size: 15px;
+            line-height: 1.8;
+            color: #f0dfe5;
+            max-width: 360px;
+        }
+
+        .brand-footer {
+            margin-top: 65px;
+            font-size: 12px;
+            color: #e6cbd5;
+        }
+
+        .form-panel {
+            padding: 65px 55px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .form-panel h2 {
+            font-size: 29px;
+            color: #351421;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #777078;
+            font-size: 14px;
+            margin-bottom: 35px;
+            line-height: 1.6;
+        }
+
+        .form-group {
+            margin-bottom: 22px;
+        }
+
+        label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            color: #40323a;
+            margin-bottom: 9px;
+        }
+
+        input {
+            width: 100%;
+            padding: 14px 15px;
+            border: 1px solid #ded6da;
+            border-radius: 8px;
+            outline: none;
+            font-size: 14px;
+            background: #fff;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        input:focus {
+            border-color: #762642;
+            box-shadow: 0 0 0 3px rgba(118, 38, 66, 0.10);
+        }
+
+        .login-button {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 8px;
+            background: #762642;
+            color: white;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 8px;
+            transition: background 0.2s;
+        }
+
+        .login-button:hover {
+            background: #57182e;
+        }
+
+        .login-button:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        #message {
+            min-height: 22px;
+            margin-top: 18px;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        #message.error {
+            color: #b42318;
+        }
+
+        #message.success {
+            color: #187344;
+        }
+
+        .form-note {
+            text-align: center;
+            color: #888087;
+            font-size: 12px;
+            margin-top: 28px;
+            line-height: 1.6;
+        }
+
+        @media (max-width: 700px) {
+            .login-wrapper {
+                grid-template-columns: 1fr;
+                max-width: 440px;
+            }
+
+            .brand-panel {
+                padding: 35px 30px;
+            }
+
+            .brand-panel h1 {
+                font-size: 27px;
+            }
+
+            .brand-icon {
+                margin-bottom: 18px;
+            }
+
+            .brand-footer {
+                margin-top: 25px;
+            }
+
+            .form-panel {
+                padding: 40px 30px;
+            }
+        }
+
+        @media (max-width: 380px) {
+            .brand-panel,
+            .form-panel {
+                padding-left: 22px;
+                padding-right: 22px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="login-wrapper">
+
+        <section class="brand-panel">
+            <div class="brand-icon">S</div>
+
+            <h1>Smart Campus Hub</h1>
+
+            <p>
+                Your university placement and campus management
+                platform. Explore opportunities, develop your skills
+                and stay connected with your campus.
+            </p>
+
+            <div class="brand-footer">
+                Smart Campus Hub &copy; 2026
+            </div>
+        </section>
+
+        <section class="form-panel">
+
+            <h2>Welcome Back</h2>
+
+            <p class="subtitle">
+                Sign in to access your Smart Campus Hub account.
+            </p>
+
+            <form id="loginForm">
+
+                <div class="form-group">
+                    <label for="email">Email Address</label>
+
+                    <input
+                        type="email"
+                        id="email"
+                        placeholder="Enter your email"
+                        autocomplete="username"
+                        required
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Password</label>
+
+                    <input
+                        type="password"
+                        id="password"
+                        placeholder="Enter your password"
+                        autocomplete="current-password"
+                        required
+                    >
+                </div>
+
+                <button type="submit" class="login-button" id="loginButton">
+                    Sign In
+                </button>
+
+            </form>
+
+            <p id="message" role="alert" aria-live="polite"></p>
+
+            <p class="form-note">
+                Secure access for students, coordinators and advisors.
+            </p>
+
+        </section>
+
+    </div>
 
     <script>
-      document
-        .getElementById("loginForm")
-        .addEventListener("submit", async function (event) {
-          event.preventDefault();
+        const loginForm = document.getElementById("loginForm");
+        const message = document.getElementById("message");
+        const loginButton = document.getElementById("loginButton");
 
-          const email = document.getElementById("email").value;
-          const password = document.getElementById("password").value;
-          const csrfToken = document.querySelector(
-            'meta[name="csrf-token"]',
-          ).content;
-          const message = document.getElementById("message");
+        const csrfToken = document.querySelector(
+            'meta[name="csrf-token"]'
+        ).content;
 
-          try {
-            const response = await fetch("/api/auth/login", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                "X-CSRFToken": csrfToken,
-              },
-              body: JSON.stringify({
-                email: email,
-                password: password,
-              }),
-            });
+        loginForm.addEventListener("submit", async function(event) {
+            event.preventDefault();
 
-            const data = await response.json();
+            const email = document.getElementById("email").value.trim();
+            const password = document.getElementById("password").value;
 
-            if (response.ok) {
-              message.textContent = "Login successful!";
+            message.textContent = "";
+            message.className = "";
 
-              if (data.role === "coordinator") {
-                window.location.href = "/api/analytics/dashboard";
-              } else if (data.role === "student") {
-                window.location.href = "/api/auth/student-dashboard";
-              } else if (data.role === "advisor") {
-                window.location.href = "/advisor/dashboard";
-              } else {
-                message.textContent = "Unknown user role.";
-              }
-            } else {
-              message.textContent = data.error || "Login failed.";
+            loginButton.disabled = true;
+            loginButton.textContent = "Signing in...";
+
+            try {
+                const response = await fetch("/api/auth/login", {
+                    method: "POST",
+                    credentials: "same-origin",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRFToken": csrfToken
+                    },
+                    body: JSON.stringify({
+                        email: email,
+                        password: password
+                    })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    message.textContent = data.error || "Login failed.";
+                    message.className = "error";
+                    return;
+                }
+
+                message.textContent = "Login successful!";
+                message.className = "success";
+
+                if (data.role === "coordinator") {
+                    window.location.href = "/coordinator/dashboard";
+
+                } else if (data.role === "student") {
+                    window.location.href = "/api/auth/student-dashboard";
+
+                } else if (data.role === "advisor") {
+                    window.location.href = "/advisor/dashboard";
+
+                } else {
+                    message.textContent = "Unknown user role.";
+                    message.className = "error";
+                }
+
+            } catch (error) {
+                message.textContent =
+                    "Unable to connect to the server. Please try again.";
+                message.className = "error";
+
+            } finally {
+                loginButton.disabled = false;
+                loginButton.textContent = "Sign In";
             }
-          } catch (error) {
-            message.textContent = "Unable to connect. Please try again.";
-          }
         });
     </script>
-  </body>
+
+</body>
 </html>
