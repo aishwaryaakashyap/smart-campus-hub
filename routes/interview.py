@@ -127,6 +127,10 @@ def submit_experience():
 
 @interview_bp.route('/company/<int:company_id>', methods=['GET'])
 def list_for_company(company_id):
+    _, error = require_student()
+    if error:
+        return error
+
     if not Company.query.get(company_id):
         return jsonify({'error': 'Company not found'}), 404
 
@@ -143,6 +147,10 @@ def list_for_company(company_id):
 
 @interview_bp.route('/<int:experience_id>', methods=['GET'])
 def get_experience(experience_id):
+    _, error = require_student()
+    if error:
+        return error
+
     e = InterviewExperience.query.get(experience_id)
     if not e:
         return jsonify({'error': 'Experience not found'}), 404

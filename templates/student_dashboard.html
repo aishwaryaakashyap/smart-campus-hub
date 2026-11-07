@@ -975,6 +975,12 @@
             </div>
 
             <div class="card clickable-card"
+                 onclick="loadSection('company_updates')">
+                <h3>Company Updates</h3>
+                <p>View official placement announcements from companies.</p>
+            </div>
+
+            <div class="card clickable-card"
                  onclick="loadSection('notifications')">
                 <h3>Notifications</h3>
                 <p>View placement updates and campus notifications.</p>
@@ -996,7 +1002,8 @@
             profile: "/api/students/profile",
             skills: "/api/skills/my-skills",
             grievances: "/api/grievances/mine",
-            notifications: "/api/notifications/"
+            notifications: "/api/notifications/",
+            company_updates: "/api/updates/"
         };
 
         const titles = {
@@ -1006,7 +1013,8 @@
             skills: "My Skills",
             interviews: "Interview Experiences",
             grievances: "My Grievances",
-            notifications: "My Notifications"
+            notifications: "My Notifications",
+            company_updates: "Company Updates"
         };
 
         function showHome() {
@@ -1046,6 +1054,56 @@
             error.className = "error";
             error.textContent = message;
             content.appendChild(error);
+        }
+
+        function renderCompanyUpdates(content, updates) {
+            if (!Array.isArray(updates)) {
+                showError(
+                    content,
+                    "The server returned an unexpected company updates response."
+                );
+                return;
+            }
+
+            if (updates.length === 0) {
+                const empty = document.createElement("p");
+                empty.className = "empty-message";
+                empty.textContent = "There are no company updates yet.";
+                content.appendChild(empty);
+                return;
+            }
+
+            updates.forEach(update => {
+                const card = document.createElement("div");
+                card.className = "notification-card read";
+
+                const company = document.createElement("p");
+                company.className = "notification-meta";
+                company.textContent = update.company_name || "Company";
+                card.appendChild(company);
+
+                const heading = document.createElement("h3");
+                heading.textContent = update.title || "Company Update";
+                card.appendChild(heading);
+
+                const message = document.createElement("p");
+                message.textContent = update.message || "";
+                card.appendChild(message);
+
+                const date = document.createElement("p");
+
+                if (update.posted_at) {
+                    const parsedDate = new Date(update.posted_at);
+                    date.textContent = Number.isNaN(parsedDate.getTime())
+                        ? "Date unavailable"
+                        : "Posted: " + parsedDate.toLocaleString();
+                } else {
+                    date.textContent = "Date unavailable";
+                }
+
+                card.appendChild(date);
+                content.appendChild(card);
+            });
         }
 
         function renderNotifications(content, notifications) {
@@ -3134,6 +3192,8 @@ async function loadSection(section) {
 
                 if (section === "notifications") {
                     renderNotifications(content, data);
+                } else if (section === "company_updates") {
+                    renderCompanyUpdates(content, data);
                 } else if (section === "drives") {
                     renderPlacementDrives(content, data);
                 } else if (section === "applications") {
