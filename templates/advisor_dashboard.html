@@ -7,17 +7,19 @@
     <title>Smart Campus Hub - Advisor Dashboard</title>
 
     <style>
-        :root {
-            --primary: #5b4bdb;
-            --background: #f5f6fb;
-            --surface: #ffffff;
-            --text: #202235;
-            --muted: #777b90;
-            --border: #e5e7ef;
-            --success: #16865b;
-            --warning: #b7791f;
-            --danger: #c0394b;
-        }
+            :root {
+        --primary: #762642;
+        --primary-dark: #57182e;
+        --primary-light: #f8edf1;
+        --background: #f7f5f6;
+        --surface: #ffffff;
+        --text: #30252a;
+        --muted: #766b70;
+        --border: #eadfe3;
+        --success: #16865b;
+        --warning: #b7791f;
+        --danger: #b42318;
+    }
 
         * { box-sizing: border-box; }
 
@@ -210,6 +212,78 @@
             main { width: 94%; }
             .stats, .filters { grid-template-columns: 1fr; }
         }
+
+        /* Light burgundy dashboard theme */
+
+        header {
+            background: linear-gradient(
+                120deg,
+                var(--primary-dark),
+                var(--primary)
+            );
+            color: white;
+            border-bottom: none;
+        }
+
+        header h1 {
+            color: white;
+        }
+
+        header p {
+            color: #f3dfe6;
+        }
+
+        .intro h2 {
+            color: var(--primary-dark);
+        }
+
+        .stat {
+            border-top: 4px solid var(--primary);
+            box-shadow: 0 5px 20px rgba(65, 25, 42, 0.06);
+        }
+
+        .panel {
+            box-shadow: 0 5px 20px rgba(65, 25, 42, 0.06);
+        }
+
+        .primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .primary:hover {
+            background: var(--primary-dark);
+        }
+
+        .neutral {
+            background: var(--primary-light);
+            color: var(--primary);
+            border: 1px solid var(--border);
+        }
+
+        .neutral:hover {
+            background: #f0dce4;
+            color: var(--primary-dark);
+        }
+
+        input:focus,
+        select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(118, 38, 66, 0.10);
+        }
+
+        dialog::backdrop {
+            background: rgba(55, 20, 35, 0.55);
+        }
+
+        button:focus-visible,
+        input:focus-visible,
+        select:focus-visible {
+            outline: 2px solid #c98da3;
+            outline-offset: 2px;
+        }
+
     </style>
 </head>
 

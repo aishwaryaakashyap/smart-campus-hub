@@ -1,7 +1,7 @@
 
 import os
 
-from flask import Flask, render_template
+from flask import Flask, render_template, session
 from flask_wtf.csrf import CSRFProtect
 
 from config import Config
@@ -47,6 +47,7 @@ csrf = CSRFProtect(app)
 
 db.init_app(app)
 
+
 # Authentication
 app.register_blueprint(auth_bp, url_prefix="/api/auth")
 
@@ -87,14 +88,41 @@ app.register_blueprint(grievance_bp, url_prefix="/api/grievances")
 app.register_blueprint(notifications_bp, url_prefix="/api/notifications")
 
 
+# Skill Gap Analysis Page
 @app.route("/skill-gap")
 def skill_gap_page():
-    return render_template("skill_gap.html")
+    return render_template(
+        "skill_gap.html",
+        user_role=session.get("role", "student")
+    )
 
 
+# Coordinator Dashboard
+@app.route("/coordinator/dashboard")
+def coordinator_dashboard_page():
+    from flask import jsonify, redirect, url_for
+
+    if not session.get("user_id"):
+        return redirect(url_for("auth.login_page"))
+
+    if session.get("role") != "coordinator":
+        return jsonify({
+            "error": "Only coordinators can access this dashboard"
+        }), 403
+
+    user = db.session.get(User, session["user_id"])
+
+    if not user or user.role != "coordinator":
+        session.clear()
+        return redirect(url_for("auth.login_page"))
+
+    return render_template("coordinator_dashboard.html", user=user)
+
+
+# Coordinator Grievance Management
 @app.route("/coordinator/grievances")
 def coordinator_grievances_page():
-    from flask import jsonify, redirect, session, url_for
+    from flask import jsonify, redirect, url_for
 
     if not session.get("user_id"):
         return redirect(url_for("auth.login_page"))
@@ -105,15 +133,18 @@ def coordinator_grievances_page():
         }), 403
 
     user = db.session.get(User, session["user_id"])
+
     if not user or user.role != "coordinator":
         session.clear()
         return redirect(url_for("auth.login_page"))
 
     return render_template("coordinator_grievances.html", user=user)
 
+
+# Advisor Dashboard
 @app.route("/advisor/dashboard")
 def advisor_dashboard_page():
-    from flask import jsonify, redirect, session, url_for
+    from flask import jsonify, redirect, url_for
 
     if not session.get("user_id"):
         return redirect(url_for("auth.login_page"))
@@ -130,6 +161,7 @@ def advisor_dashboard_page():
         return redirect(url_for("auth.login_page"))
 
     return render_template("advisor_dashboard.html", user=user)
+
 
 if __name__ == "__main__":
     with app.app_context():

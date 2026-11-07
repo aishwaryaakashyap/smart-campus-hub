@@ -80,7 +80,33 @@
             color: #64748b;
             font-size: 13px;
         }
-    </style>
+
+        /* Smart Campus Hub burgundy theme */
+        .navbar { background: #4a1025; }
+
+        .hero {
+            background: linear-gradient(120deg, #5b1830, #873b52);
+        }
+
+        .btn-primary {
+            background-color: #721f3b;
+            border-color: #721f3b;
+        }
+
+        .btn-primary:hover,
+        .btn-primary:focus {
+            background-color: #54142b;
+            border-color: #54142b;
+        }
+
+        .text-primary { color: #721f3b !important; }
+        .bg-primary { background-color: #721f3b !important; }
+        .skill-card { border-top-color: #721f3b; }
+        .progress-bar { background-color: #721f3b !important; }
+        .stat { color: #721f3b; }
+        .table thead th { color: #721f3b; }
+
+</style>
 </head>
 
 <body>
@@ -101,7 +127,7 @@
         </p>
     </div>
 
-    <div class="card p-4 mb-4">
+    <div class="card p-4 mb-4" id="studentAnalyzeCard">
         <h4 class="section-title">Analyze a Placement Drive</h4>
         <label for="driveId" class="form-label">Placement Drive ID</label>
 
@@ -119,6 +145,122 @@
         </div>
 
         <p id="error" class="text-danger mt-3 mb-0" role="alert"></p>
+    </div>
+
+
+    <div id="coordinatorPanel" hidden>
+        <div class="card p-4 mb-4">
+            <h4 class="section-title">Placement Drive Skill Analysis</h4>
+            <p class="text-secondary">
+                Select a placement drive to analyse the skill readiness
+                of registered students.
+            </p>
+
+            <div class="row g-3 align-items-end">
+                <div class="col-md-9">
+                    <label for="coordinatorDrive" class="form-label">
+                        Select Placement Drive
+                    </label>
+                    <select id="coordinatorDrive" class="form-select form-select-lg">
+                        <option value="">Loading placement drives...</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <button id="coordinatorAnalyzeBtn"
+                            class="btn btn-primary btn-lg w-100"
+                            onclick="analyzeCoordinatorSkills()">
+                        Analyze
+                    </button>
+                </div>
+            </div>
+
+            <p id="coordinatorError" class="text-danger mt-3 mb-0"
+               role="alert"></p>
+        </div>
+
+        <div id="coordinatorResults" hidden>
+            <div class="card p-4 mb-4">
+                <p class="text-primary fw-bold mb-2">TARGET JOB ROLE</p>
+                <h3 id="coordinatorJobRole" class="fw-bold"></h3>
+                <p id="coordinatorCompany" class="text-secondary"></p>
+
+                <div class="row g-3 mt-2">
+                    <div class="col-md-4">
+                        <div class="card p-3 h-100">
+                            <p class="text-secondary mb-1">Total Students</p>
+                            <div id="totalStudents" class="stat">0</div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card p-3 h-100">
+                            <p class="text-secondary mb-1">Required Skills</p>
+                            <div id="totalRequiredSkills" class="stat">0</div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card p-3 h-100">
+                            <p class="text-secondary mb-1">Overall Skill Readiness</p>
+                            <div id="overallReadiness" class="stat">N/A</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-4">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="fw-semibold">Student Skill Readiness</span>
+                        <span id="readinessLabel" class="fw-bold"></span>
+                    </div>
+                    <div class="progress">
+                        <div id="readinessProgress"
+                             class="progress-bar bg-primary"
+                             role="progressbar"
+                             style="width:0%"
+                             aria-valuemin="0"
+                             aria-valuemax="100"
+                             aria-valuenow="0"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card p-4 mb-4">
+                <h4 class="section-title">Skill-wise Student Analysis</h4>
+                <p class="text-secondary">
+                    See how many students possess each required skill,
+                    how many are missing it, and their proficiency levels.
+                </p>
+
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead>
+                            <tr>
+                                <th>Required Skill</th>
+                                <th>Students With Skill</th>
+                                <th>Students Missing Skill</th>
+                                <th>Beginner</th>
+                                <th>Intermediate</th>
+                                <th>Advanced</th>
+                            </tr>
+                        </thead>
+                        <tbody id="coordinatorSkillTable">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card p-4 mb-4">
+                <h4 class="section-title">Skills Requiring Attention</h4>
+                <p class="text-secondary">
+                    Skills with the highest number of students missing
+                    them are listed first.
+                </p>
+                <div id="coordinatorMissingSkills"></div>
+            </div>
+
+            <div class="card p-4 mb-4">
+                <h5 class="section-title">About This Analysis</h5>
+                <p id="coordinatorMethod" class="text-secondary mb-0"></p>
+            </div>
+        </div>
     </div>
 
     <div id="results" hidden>
@@ -347,6 +489,189 @@ function renderLearningPriorities(data, missingSkills) {
         container.appendChild(card);
     });
 }
+
+const currentUserRole = {{ user_role|tojson }};
+
+async function loadCoordinatorDrives() {
+    const select = document.getElementById("coordinatorDrive");
+    const error = document.getElementById("coordinatorError");
+
+    try {
+        const response = await fetch("/api/drives/", {
+            credentials: "same-origin"
+        });
+
+        if (!response.ok) {
+            throw new Error("Unable to load placement drives.");
+        }
+
+        const drives = await response.json();
+        select.replaceChildren();
+
+        const firstOption = document.createElement("option");
+        firstOption.value = "";
+        firstOption.textContent = "Select a placement drive";
+        select.appendChild(firstOption);
+
+        drives.forEach(drive => {
+            const option = document.createElement("option");
+            option.value = drive.id;
+            option.textContent =
+                `${drive.job_role} - ${drive.company_name} (ID: ${drive.id})`;
+            select.appendChild(option);
+        });
+
+        if (drives.length === 0) {
+            error.textContent = "No placement drives are available.";
+        }
+    } catch (err) {
+        error.textContent = err.message;
+    }
+}
+
+async function analyzeCoordinatorSkills() {
+    const driveId = document.getElementById("coordinatorDrive").value;
+    const error = document.getElementById("coordinatorError");
+    const button = document.getElementById("coordinatorAnalyzeBtn");
+    const results = document.getElementById("coordinatorResults");
+
+    error.textContent = "";
+    results.hidden = true;
+
+    if (!driveId) {
+        error.textContent = "Please select a placement drive.";
+        return;
+    }
+
+    button.disabled = true;
+    button.textContent = "Analyzing...";
+
+    try {
+        const response = await fetch(
+            `/api/skill-gap/coordinator/${encodeURIComponent(driveId)}`,
+            { credentials: "same-origin" }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.error || "Unable to analyse skill gaps.");
+        }
+
+        document.getElementById("coordinatorJobRole").textContent =
+            data.job_role || "Placement Role";
+
+        document.getElementById("coordinatorCompany").textContent =
+            data.company_name || "Company not specified";
+
+        document.getElementById("totalStudents").textContent =
+            data.total_students;
+
+        document.getElementById("totalRequiredSkills").textContent =
+            data.total_required_skills;
+
+        const percentage = data.overall_skill_readiness;
+
+        document.getElementById("overallReadiness").textContent =
+            percentage === null || percentage === undefined
+                ? "N/A" : `${percentage}%`;
+
+        document.getElementById("readinessLabel").textContent =
+            percentage === null || percentage === undefined
+                ? "Not available" : `${percentage}%`;
+
+        const safePercentage = Math.max(
+            0, Math.min(100, Number(percentage) || 0)
+        );
+
+        const progress = document.getElementById("readinessProgress");
+        progress.style.width = `${safePercentage}%`;
+        progress.setAttribute("aria-valuenow", safePercentage);
+
+        const table = document.getElementById("coordinatorSkillTable");
+        const missingContainer =
+            document.getElementById("coordinatorMissingSkills");
+
+        table.replaceChildren();
+        missingContainer.replaceChildren();
+
+        (data.skill_report || []).forEach(item => {
+            const counts = item.proficiency_counts || {};
+            const row = document.createElement("tr");
+
+            [
+                item.skill_name,
+                item.students_with_skill,
+                item.students_missing_skill,
+                counts.Beginner || 0,
+                counts.Intermediate || 0,
+                counts.Advanced || 0
+            ].forEach(value => {
+                const cell = document.createElement("td");
+                cell.textContent = value;
+                row.appendChild(cell);
+            });
+
+            table.appendChild(row);
+
+            if (item.students_missing_skill > 0) {
+                const card = document.createElement("div");
+                card.className = "priority-card priority-high";
+
+                const heading = document.createElement("h6");
+                heading.className = "fw-bold";
+                heading.textContent = item.skill_name;
+
+                const detail = document.createElement("p");
+                detail.className = "mb-0 text-secondary";
+                detail.textContent =
+                    `${item.students_missing_skill} students are missing this skill.`;
+
+                card.append(heading, detail);
+                missingContainer.appendChild(card);
+            }
+        });
+
+        if (!missingContainer.children.length) {
+            missingContainer.textContent =
+                "All students have the required skills.";
+        }
+
+        document.getElementById("coordinatorMethod").textContent =
+            data.method || "Aggregate skill analysis.";
+
+        results.hidden = false;
+
+    } catch (err) {
+        error.textContent = err.message;
+    } finally {
+        button.disabled = false;
+        button.textContent = "Analyze";
+    }
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+    if (currentUserRole === "coordinator") {
+        document.querySelector(".navbar .text-white-50").textContent =
+            "Coordinator Portal";
+
+        document.querySelector(".hero .text-uppercase").textContent =
+            "Placement Intelligence";
+
+        document.querySelector(".hero h1").textContent =
+            "Skill Gap Analysis";
+
+        document.querySelector(".hero p:last-child").textContent =
+            "Analyse student skill readiness against placement requirements.";
+
+        document.getElementById("studentAnalyzeCard").hidden = true;
+        document.getElementById("results").hidden = true;
+        document.getElementById("coordinatorPanel").hidden = false;
+
+        loadCoordinatorDrives();
+    }
+});
+
 </script>
 </body>
 </html>
