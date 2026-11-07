@@ -1,0 +1,1378 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="csrf-token" content="{{ csrf_token() }}" />
+    <title>Coordinator Dashboard | Smart Campus Hub</title>
+
+    <style>
+      :root {
+        --burgundy: #800020;
+        --dark-burgundy: #5c0018;
+        --light-burgundy: #f8e9ee;
+        --background: #f6f5f7;
+        --text: #29232a;
+        --muted: #77717a;
+        --white: #ffffff;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        font-family: Arial, sans-serif;
+      }
+
+      body {
+        background: var(--background);
+        color: var(--text);
+      }
+
+      header {
+        background: var(--burgundy);
+        color: white;
+        padding: 22px 6%;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 15px;
+      }
+
+      header h2 {
+        font-size: 22px;
+      }
+
+      header a {
+        color: white;
+        text-decoration: none;
+        border: 1px solid rgba(255, 255, 255, 0.6);
+        padding: 9px 17px;
+        border-radius: 7px;
+      }
+
+      .container {
+        width: 88%;
+        max-width: 1250px;
+        margin: 35px auto;
+      }
+
+      .welcome {
+        margin-bottom: 30px;
+      }
+
+      .welcome h1 {
+        font-size: 29px;
+        margin-bottom: 9px;
+      }
+
+      .welcome p {
+        color: var(--muted);
+      }
+
+      .section-heading {
+        font-size: 20px;
+        margin: 28px 0 17px;
+      }
+
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+        gap: 18px;
+      }
+
+      .stat-card {
+        background: white;
+        padding: 23px;
+        border-radius: 12px;
+        border-left: 5px solid var(--burgundy);
+        box-shadow: 0 3px 12px rgba(0, 0, 0, 0.05);
+      }
+
+      .stat-card p {
+        color: var(--muted);
+        font-size: 14px;
+        margin-bottom: 12px;
+      }
+
+      .stat-card h2 {
+        color: var(--burgundy);
+        font-size: 29px;
+      }
+
+      .management-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 20px;
+      }
+
+      .management-card {
+        background: white;
+        padding: 24px;
+        border-radius: 12px;
+        box-shadow: 0 3px 12px rgba(0, 0, 0, 0.05);
+      }
+
+      .management-card h3 {
+        color: var(--burgundy);
+        margin-bottom: 11px;
+      }
+
+      .management-card p {
+        color: var(--muted);
+        line-height: 1.6;
+        font-size: 14px;
+        margin-bottom: 18px;
+      }
+
+      .management-card a {
+        display: inline-block;
+        background: var(--burgundy);
+        color: white;
+        text-decoration: none;
+        padding: 10px 16px;
+        border-radius: 7px;
+        font-size: 14px;
+      }
+
+      .management-card a:hover,
+      header a:hover {
+        background: var(--dark-burgundy);
+      }
+
+      .loading {
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      .error {
+        color: #b42318;
+        margin-top: 12px;
+      }
+
+      footer {
+        text-align: center;
+        color: var(--muted);
+        padding: 30px 15px;
+        font-size: 13px;
+      }
+
+      @media (max-width: 600px) {
+        .container {
+          width: 92%;
+        }
+
+        .welcome h1 {
+          font-size: 24px;
+        }
+      }
+
+      .company-section {
+        background: white;
+        padding: 26px;
+        margin-top: 28px;
+        border-radius: 12px;
+        box-shadow: 0 3px 12px rgba(0, 0, 0, 0.05);
+      }
+
+      .company-section h2 {
+        color: var(--burgundy);
+        margin-bottom: 18px;
+      }
+
+      .company-form {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 15px;
+        margin-bottom: 22px;
+      }
+
+      .company-form input,
+      .company-form textarea {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid #ddd;
+        border-radius: 7px;
+        font-size: 14px;
+      }
+
+      .company-form textarea {
+        min-height: 75px;
+        resize: vertical;
+      }
+
+      .company-form button,
+      .company-action {
+        background: var(--burgundy);
+        color: white;
+        border: none;
+        padding: 11px 17px;
+        border-radius: 7px;
+        cursor: pointer;
+      }
+
+      .company-action.delete {
+        background: #a52a2a;
+      }
+
+      .company-action.cancel {
+        background: #777;
+      }
+
+      .company-list {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 16px;
+      }
+
+      .company-item {
+        border: 1px solid #eee;
+        border-left: 4px solid var(--burgundy);
+        border-radius: 9px;
+        padding: 18px;
+      }
+
+      .company-item h3 {
+        color: var(--burgundy);
+        margin-bottom: 10px;
+      }
+
+      .company-item p {
+        color: var(--muted);
+        margin-bottom: 8px;
+        overflow-wrap: anywhere;
+      }
+
+      .company-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 9px;
+        margin-top: 15px;
+      }
+
+      .company-message {
+        margin: 12px 0;
+        font-size: 14px;
+      }
+
+      .company-message.success {
+        color: #187343;
+      }
+
+      .company-message.error {
+        color: #b42318;
+      }
+    </style>
+  </head>
+
+  <body>
+    <header>
+      <h2>Smart Campus Hub</h2>
+      <button
+        type="button"
+        id="logoutButton"
+        onclick="logout()"
+        style="background:none;border:0;color:inherit;text-decoration:underline;cursor:pointer;font:inherit;padding:0;"
+      >Logout</button>
+    </header>
+
+    <main class="container">
+      <section class="welcome">
+        <h1>Welcome, {{ user.name }}!</h1>
+        <p>
+          Coordinator Dashboard — Manage campus placements and student progress.
+        </p>
+      </section>
+
+      <h2 class="section-heading">Placement Overview</h2>
+
+      <section class="stats-grid">
+        <div class="stat-card">
+          <p>Total Students</p>
+          <h2 id="totalStudents">--</h2>
+        </div>
+
+        <div class="stat-card">
+          <p>Companies</p>
+          <h2 id="totalCompanies">--</h2>
+        </div>
+
+        <div class="stat-card">
+          <p>Placement Drives</p>
+          <h2 id="totalDrives">--</h2>
+        </div>
+
+        <div class="stat-card">
+          <p>Open Drives</p>
+          <h2 id="openDrives">--</h2>
+        </div>
+
+        <div class="stat-card">
+          <p>Total Applications</p>
+          <h2 id="totalApplications">--</h2>
+        </div>
+
+        <div class="stat-card">
+          <p>Students Selected</p>
+          <h2 id="selectedStudents">--</h2>
+        </div>
+      </section>
+
+      <p id="analyticsError" class="error"></p>
+
+      <h2 class="section-heading">Placement Management</h2>
+
+      <section class="management-grid">
+        <div class="management-card">
+          <h3>Company Management</h3>
+          <p>
+            Add companies, maintain company details and manage existing company
+            records.
+          </p>
+          <a href="#company-management">Manage Companies</a>
+        </div>
+
+        <div class="management-card">
+          <h3>Placement Drive Management</h3>
+          <p>
+            Create placement drives, define eligibility criteria and manage
+            drive status.
+          </p>
+          <a href="#drive-management">Manage Drives</a>
+        </div>
+
+        <div class="management-card">
+          <h3>Application Management</h3>
+          <p>
+            Review student applications, update selection status and add
+            remarks.
+          </p>
+          <a href="#application-management">Manage Applications</a>
+        </div>
+      </section>
+
+      <h2 class="section-heading">Reports and Campus Management</h2>
+
+      <section class="management-grid">
+        <div class="management-card">
+          <h3>Placement Analytics</h3>
+          <p>
+            View placement statistics, company performance and application
+            reports.
+          </p>
+          <a href="/api/analytics/dashboard">View Analytics</a>
+        </div>
+
+        <div class="management-card">
+          <h3>Grievance Management</h3>
+          <p>
+            Review student grievances, assign advisors and monitor resolution
+            progress.
+          </p>
+          <a href="/coordinator/grievances">Manage Grievances</a>
+        </div>
+
+        <div class="management-card">
+          <h3>Skill Gap Analysis</h3>
+          <p>
+            Analyze student skills and identify the skills required for
+            placement drives.
+          </p>
+          <a href="/skill-gap">Open Skill Gap Analysis</a>
+        </div>
+      </section>
+
+      <section id="company-management" class="company-section">
+        <h2>Company Management</h2>
+        <p style="color: var(--muted); margin-bottom: 20px">
+          Add and manage companies participating in campus placements.
+        </p>
+
+        <h3 id="companyFormHeading" style="margin-bottom: 14px">
+          Add New Company
+        </h3>
+
+        <form id="companyForm" class="company-form">
+          <input
+            type="text"
+            id="companyName"
+            placeholder="Company Name"
+            required
+          />
+
+          <input type="text" id="companyIndustry" placeholder="Industry" />
+
+          <input type="text" id="companyLocation" placeholder="Location" />
+
+          <input
+            type="url"
+            id="companyWebsite"
+            placeholder="Website (https://...)"
+          />
+
+          <textarea
+            id="companyDescription"
+            placeholder="Company Description"
+          ></textarea>
+
+          <div style="display: flex; gap: 10px; flex-wrap: wrap">
+            <button type="submit" id="companySubmitButton">Add Company</button>
+            <button
+              type="button"
+              id="companyCancelButton"
+              class="company-action cancel"
+              hidden
+            >
+              Cancel Edit
+            </button>
+          </div>
+        </form>
+
+        <p id="companyMessage" class="company-message" aria-live="polite"></p>
+
+        <h3 style="margin-bottom: 15px">Registered Companies</h3>
+        <div id="companyList" class="company-list">
+          <p class="loading">Loading companies...</p>
+        </div>
+      </section>
+
+      <section id="drive-management" class="company-section">
+        <h2>Placement Drive Management</h2>
+        <p style="color: var(--muted); margin-bottom: 20px">
+          Create placement opportunities and manage student eligibility.
+        </p>
+
+        <h3 style="margin-bottom: 15px">Create New Placement Drive</h3>
+
+        <form id="driveForm" class="company-form">
+          <select id="driveCompany" required>
+            <option value="">Choose Company</option>
+          </select>
+
+          <input type="text" id="driveRole" placeholder="Job Role" required />
+
+          <input type="date" id="driveDate" aria-label="Drive Date" />
+
+          <input
+            type="date"
+            id="driveDeadline"
+            aria-label="Application Deadline"
+          />
+
+          <input
+            type="text"
+            id="driveSalary"
+            placeholder="Salary Package (e.g. 6 LPA)"
+          />
+
+          <input type="text" id="driveLocation" placeholder="Job Location" />
+
+          <input
+            type="number"
+            id="driveCgpa"
+            placeholder="Minimum CGPA"
+            min="0"
+            max="10"
+            step="0.01"
+          />
+
+          <input
+            type="text"
+            id="driveBranches"
+            placeholder="Eligible Branches (CSE, ISE, ECE)"
+          />
+
+          <input
+            type="number"
+            id="driveSemester"
+            placeholder="Eligible Semester"
+            min="1"
+            step="1"
+          />
+
+          <textarea
+            id="driveDescription"
+            placeholder="Job Description"
+          ></textarea>
+
+          <button type="submit" id="driveSubmitButton">
+            Create Placement Drive
+          </button>
+        </form>
+
+        <p id="driveMessage" class="company-message" aria-live="polite"></p>
+
+        <h3 style="margin: 20px 0 15px">Registered Placement Drives</h3>
+
+        <div id="driveList" class="company-list">
+          <p class="loading">Loading placement drives...</p>
+        </div>
+      </section>
+
+      <section id="application-management" class="company-section">
+        <h2>Application Management</h2>
+        <p>
+          Review student applications, track selection progress and update
+          application status.
+        </p>
+
+        <div class="application-toolbar">
+          <input
+            type="search"
+            id="applicationSearch"
+            placeholder="Search student, register number, company or job role..."
+          />
+
+          <select id="applicationStatusFilter">
+            <option value="All">All Applications</option>
+            <option value="Applied">Applied</option>
+            <option value="Under Review">Under Review</option>
+            <option value="Shortlisted">Shortlisted</option>
+            <option value="Interview">Interview</option>
+            <option value="Selected">Selected</option>
+            <option value="Not Selected">Not Selected</option>
+            <option value="Withdrawn">Withdrawn</option>
+          </select>
+        </div>
+
+        <p
+          id="applicationMessage"
+          class="company-message"
+          aria-live="polite"
+        ></p>
+
+        <div id="applicationList" class="company-list">
+          <p class="loading">Loading student applications...</p>
+        </div>
+      </section>
+
+      <style>
+        .application-toolbar {
+          display: grid;
+          grid-template-columns: 2fr 1fr;
+          gap: 12px;
+          margin: 20px 0;
+        }
+
+        .application-toolbar input,
+        .application-toolbar select,
+        .application-update-form select,
+        .application-update-form textarea {
+          width: 100%;
+          padding: 12px;
+          border: 1px solid #ddd;
+          border-radius: 8px;
+          font: inherit;
+          background: white;
+        }
+
+        .application-card {
+          background: white;
+          border: 1px solid #eadde1;
+          border-left: 5px solid #70243d;
+          border-radius: 12px;
+          padding: 20px;
+          margin-bottom: 16px;
+          box-shadow: 0 3px 12px rgba(0, 0, 0, 0.04);
+        }
+
+        .application-card h3 {
+          color: #70243d;
+          margin: 0 0 8px;
+        }
+
+        .application-details {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 10px;
+          margin: 15px 0;
+        }
+
+        .application-details p {
+          margin: 0;
+          color: #555;
+          overflow-wrap: anywhere;
+        }
+
+        .application-update-form {
+          border-top: 1px solid #eee;
+          padding-top: 15px;
+          display: grid;
+          gap: 10px;
+        }
+
+        .application-update-form label {
+          font-weight: 600;
+          color: #70243d;
+        }
+
+        .application-update-form button {
+          background: #70243d;
+          color: white;
+          border: none;
+          border-radius: 8px;
+          padding: 12px 18px;
+          cursor: pointer;
+          font-weight: 600;
+        }
+
+        .application-update-form button:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+
+        .application-empty {
+          background: white;
+          padding: 25px;
+          text-align: center;
+          border-radius: 10px;
+          color: #777;
+        }
+
+        @media (max-width: 650px) {
+          .application-toolbar,
+          .application-details {
+            grid-template-columns: 1fr;
+          }
+        }
+      </style>
+    </main>
+
+    <footer>
+      Smart Campus Hub | Placement Intelligence and Grievance Management
+    </footer>
+
+    <script>
+      // ================= COMPANY MANAGEMENT =================
+
+      const companyCsrfToken = document.querySelector(
+        'meta[name="csrf-token"]',
+      ).content;
+
+      // Coordinator logout using the backend POST endpoint.
+      async function logout() {
+        const button = document.getElementById("logoutButton");
+
+        if (button) {
+          button.disabled = true;
+        }
+
+        try {
+          const response = await fetch("/api/auth/logout", {
+            method: "POST",
+            credentials: "same-origin",
+            headers: {
+              "X-CSRFToken": companyCsrfToken,
+            },
+          });
+
+          if (!response.ok) {
+            const data = await response.json().catch(() => ({}));
+            throw new Error(data.error || "Logout failed.");
+          }
+
+          window.location.href = "/api/auth/login-page";
+        } catch (error) {
+          if (button) {
+            button.disabled = false;
+          }
+
+          alert(error.message || "Unable to log out. Please try again.");
+        }
+      }
+
+
+      const companyForm = document.getElementById("companyForm");
+      const companyList = document.getElementById("companyList");
+      const companyMessage = document.getElementById("companyMessage");
+
+      let editingCompanyId = null;
+
+      function showCompanyMessage(message, type = "success") {
+        companyMessage.textContent = message;
+        companyMessage.className = "company-message " + type;
+      }
+
+      async function companyRequest(url, options = {}) {
+        const response = await fetch(url, {
+          credentials: "same-origin",
+          ...options,
+          headers: {
+            ...(options.headers || {}),
+            ...(options.method && options.method !== "GET"
+              ? { "X-CSRFToken": companyCsrfToken }
+              : {}),
+          },
+        });
+
+        const data = await response.json().catch(() => ({}));
+
+        if (!response.ok) {
+          throw new Error(data.error || "Company request failed.");
+        }
+
+        return data;
+      }
+
+      async function loadCompanies() {
+        companyList.replaceChildren();
+
+        const loading = document.createElement("p");
+        loading.className = "loading";
+        loading.textContent = "Loading companies...";
+        companyList.appendChild(loading);
+
+        try {
+          const companies = await companyRequest("/api/companies/");
+
+          companyList.replaceChildren();
+
+          if (!Array.isArray(companies) || companies.length === 0) {
+            const empty = document.createElement("p");
+            empty.textContent = "No companies have been added yet.";
+            companyList.appendChild(empty);
+            return;
+          }
+
+          companies.forEach((company) => {
+            const card = document.createElement("article");
+            card.className = "company-item";
+
+            const name = document.createElement("h3");
+            name.textContent = company.name || "Unnamed Company";
+
+            const industry = document.createElement("p");
+            industry.textContent =
+              "Industry: " + (company.industry || "Not specified");
+
+            const location = document.createElement("p");
+            location.textContent =
+              "Location: " + (company.location || "Not specified");
+
+            const actions = document.createElement("div");
+            actions.className = "company-actions";
+
+            const editButton = document.createElement("button");
+            editButton.type = "button";
+            editButton.className = "company-action";
+            editButton.textContent = "Edit";
+            editButton.addEventListener("click", () => {
+              startCompanyEdit(company);
+            });
+
+            const deleteButton = document.createElement("button");
+            deleteButton.type = "button";
+            deleteButton.className = "company-action delete";
+            deleteButton.textContent = "Delete";
+            deleteButton.addEventListener("click", () => {
+              deleteCompany(company.id, company.name);
+            });
+
+            actions.append(editButton, deleteButton);
+            card.append(name, industry, location, actions);
+            companyList.appendChild(card);
+          });
+        } catch (error) {
+          companyList.replaceChildren();
+          const errorText = document.createElement("p");
+          errorText.className = "error";
+          errorText.textContent = error.message;
+          companyList.appendChild(errorText);
+        }
+      }
+
+      function startCompanyEdit(company) {
+        editingCompanyId = company.id;
+
+        document.getElementById("companyName").value = company.name || "";
+        document.getElementById("companyIndustry").value =
+          company.industry || "";
+        document.getElementById("companyLocation").value =
+          company.location || "";
+
+        companyRequest("/api/companies/" + company.id)
+          .then((details) => {
+            if (editingCompanyId !== company.id) return;
+
+            document.getElementById("companyWebsite").value =
+              details.website || "";
+
+            document.getElementById("companyDescription").value =
+              details.description || "";
+          })
+          .catch((error) => showCompanyMessage(error.message, "error"));
+
+        document.getElementById("companyFormHeading").textContent =
+          "Edit Company";
+        document.getElementById("companySubmitButton").textContent =
+          "Save Changes";
+        document.getElementById("companyCancelButton").hidden = false;
+
+        document.getElementById("company-management").scrollIntoView({
+          behavior: "smooth",
+        });
+      }
+
+      function resetCompanyForm() {
+        editingCompanyId = null;
+        companyForm.reset();
+
+        document.getElementById("companyFormHeading").textContent =
+          "Add New Company";
+        document.getElementById("companySubmitButton").textContent =
+          "Add Company";
+        document.getElementById("companyCancelButton").hidden = true;
+      }
+
+      document
+        .getElementById("companyCancelButton")
+        .addEventListener("click", resetCompanyForm);
+
+      companyForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+
+        const payload = {
+          name: document.getElementById("companyName").value.trim(),
+          industry: document.getElementById("companyIndustry").value.trim(),
+          location: document.getElementById("companyLocation").value.trim(),
+          website: document.getElementById("companyWebsite").value.trim(),
+          description: document
+            .getElementById("companyDescription")
+            .value.trim(),
+        };
+
+        if (!payload.name) {
+          showCompanyMessage("Company name is required.", "error");
+          return;
+        }
+
+        const button = document.getElementById("companySubmitButton");
+        button.disabled = true;
+
+        try {
+          if (editingCompanyId) {
+            await companyRequest("/api/companies/" + editingCompanyId, {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(payload),
+            });
+            showCompanyMessage("Company updated successfully.");
+          } else {
+            await companyRequest("/api/companies/", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(payload),
+            });
+            showCompanyMessage("Company added successfully.");
+          }
+
+          resetCompanyForm();
+          await loadCompanies();
+          await loadPlacementOverview();
+        } catch (error) {
+          showCompanyMessage(error.message, "error");
+        } finally {
+          button.disabled = false;
+        }
+      });
+
+      async function deleteCompany(companyId, companyName) {
+        if (!confirm("Are you sure you want to delete " + companyName + "?")) {
+          return;
+        }
+
+        try {
+          await companyRequest("/api/companies/" + companyId, {
+            method: "DELETE",
+          });
+
+          if (editingCompanyId === companyId) {
+            resetCompanyForm();
+          }
+
+          showCompanyMessage("Company deleted successfully.");
+          await loadCompanies();
+          await loadPlacementOverview();
+        } catch (error) {
+          showCompanyMessage(error.message, "error");
+        }
+      }
+
+      loadCompanies();
+
+      // ======================================================
+
+      // =============== PLACEMENT DRIVE MANAGEMENT ===============
+
+      const driveForm = document.getElementById("driveForm");
+      const driveList = document.getElementById("driveList");
+      const driveMessage = document.getElementById("driveMessage");
+      const driveCompany = document.getElementById("driveCompany");
+
+      function showDriveMessage(message, type = "success") {
+        driveMessage.textContent = message;
+        driveMessage.className = "company-message " + type;
+      }
+
+      async function loadDriveCompanies() {
+        try {
+          const companies = await companyRequest("/api/companies/");
+
+          driveCompany.replaceChildren();
+
+          const option = document.createElement("option");
+          option.value = "";
+          option.textContent = "Choose Company";
+          driveCompany.appendChild(option);
+
+          companies.forEach((company) => {
+            const item = document.createElement("option");
+            item.value = company.id;
+            item.textContent = company.name;
+            driveCompany.appendChild(item);
+          });
+        } catch (error) {
+          showDriveMessage(
+            "Unable to load companies: " + error.message,
+            "error",
+          );
+        }
+      }
+
+      async function loadPlacementDrives() {
+        driveList.replaceChildren();
+
+        const loading = document.createElement("p");
+        loading.className = "loading";
+        loading.textContent = "Loading placement drives...";
+        driveList.appendChild(loading);
+
+        try {
+          const drives = await companyRequest("/api/drives/");
+
+          driveList.replaceChildren();
+
+          if (!Array.isArray(drives) || drives.length === 0) {
+            const empty = document.createElement("p");
+            empty.textContent = "No placement drives have been created yet.";
+            driveList.appendChild(empty);
+            return;
+          }
+
+          drives.forEach((drive) => {
+            const card = document.createElement("article");
+            card.className = "company-item";
+
+            const heading = document.createElement("h3");
+            heading.textContent = drive.company_name || "Company";
+
+            const role = document.createElement("p");
+            role.textContent = "Role: " + (drive.job_role || "Not specified");
+
+            const location = document.createElement("p");
+            location.textContent =
+              "Location: " + (drive.location || "Not specified");
+
+            const salary = document.createElement("p");
+            salary.textContent =
+              "Salary: " + (drive.salary_package || "Not specified");
+
+            const deadline = document.createElement("p");
+            deadline.textContent =
+              "Application Deadline: " +
+              (drive.application_deadline || "Not specified");
+
+            const status = document.createElement("p");
+            status.textContent = "Status: " + (drive.status || "Unknown");
+            status.style.fontWeight = "bold";
+            status.style.color =
+              drive.status === "Open" ? "#187343" : "#a52a2a";
+
+            card.append(heading, role, location, salary, deadline, status);
+
+            if (drive.status === "Open") {
+              const actions = document.createElement("div");
+              actions.className = "company-actions";
+
+              const closeButton = document.createElement("button");
+              closeButton.type = "button";
+              closeButton.className = "company-action delete";
+              closeButton.textContent = "Close Drive";
+
+              closeButton.addEventListener("click", () => {
+                closePlacementDrive(drive.id, drive.job_role);
+              });
+
+              actions.appendChild(closeButton);
+              card.appendChild(actions);
+            }
+
+            driveList.appendChild(card);
+          });
+        } catch (error) {
+          driveList.replaceChildren();
+
+          const errorText = document.createElement("p");
+          errorText.className = "error";
+          errorText.textContent = error.message;
+          driveList.appendChild(errorText);
+        }
+      }
+
+      driveForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+
+        const driveDate = document.getElementById("driveDate").value;
+        const deadline = document.getElementById("driveDeadline").value;
+
+        if (driveDate && deadline && deadline > driveDate) {
+          showDriveMessage(
+            "Application deadline cannot be later than drive date.",
+            "error",
+          );
+          return;
+        }
+
+        const cgpaValue = document.getElementById("driveCgpa").value;
+        const semesterValue = document.getElementById("driveSemester").value;
+
+        const payload = {
+          company_id: Number(driveCompany.value),
+          job_role: document.getElementById("driveRole").value.trim(),
+          drive_date: driveDate || null,
+          application_deadline: deadline || null,
+          salary_package: document.getElementById("driveSalary").value.trim(),
+          location: document.getElementById("driveLocation").value.trim(),
+          min_cgpa: cgpaValue === "" ? null : Number(cgpaValue),
+          eligible_branches: document
+            .getElementById("driveBranches")
+            .value.trim(),
+          eligible_semester:
+            semesterValue === "" ? null : Number(semesterValue),
+          job_description: document
+            .getElementById("driveDescription")
+            .value.trim(),
+          status: "Open",
+        };
+
+        if (!payload.company_id) {
+          showDriveMessage("Please select a company.", "error");
+          return;
+        }
+
+        if (
+          (payload.min_cgpa !== null &&
+            (!Number.isFinite(payload.min_cgpa) ||
+              payload.min_cgpa < 0 ||
+              payload.min_cgpa > 10)) ||
+          (payload.eligible_semester !== null &&
+            (!Number.isInteger(payload.eligible_semester) ||
+              payload.eligible_semester <= 0))
+        ) {
+          showDriveMessage("Please enter valid eligibility values.", "error");
+          return;
+        }
+
+        const button = document.getElementById("driveSubmitButton");
+        button.disabled = true;
+
+        try {
+          await companyRequest("/api/drives/", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+
+          showDriveMessage("Placement drive created successfully.");
+          driveForm.reset();
+
+          await loadPlacementDrives();
+          await loadPlacementOverview();
+        } catch (error) {
+          showDriveMessage(error.message, "error");
+        } finally {
+          button.disabled = false;
+        }
+      });
+
+      async function closePlacementDrive(driveId, jobRole) {
+        if (
+          !confirm("Are you sure you want to close the " + jobRole + " drive?")
+        ) {
+          return;
+        }
+
+        try {
+          await companyRequest("/api/drives/" + driveId + "/close", {
+            method: "PUT",
+          });
+
+          showDriveMessage("Placement drive closed successfully.");
+
+          await loadPlacementDrives();
+          await loadPlacementOverview();
+        } catch (error) {
+          showDriveMessage(error.message, "error");
+        }
+      }
+
+      loadDriveCompanies();
+      loadPlacementDrives();
+
+      // ==========================================================
+
+      // ================= APPLICATION MANAGEMENT =================
+
+      let coordinatorApplications = [];
+
+      function escapeApplicationHTML(value) {
+        return String(value ?? "").replace(
+          /[&<>"']/g,
+          (character) =>
+            ({
+              "&": "&amp;",
+              "<": "&lt;",
+              ">": "&gt;",
+              '"': "&quot;",
+              "'": "&#39;",
+            })[character],
+        );
+      }
+
+      function showApplicationMessage(message, type = "success") {
+        const element = document.getElementById("applicationMessage");
+        element.textContent = message;
+        element.style.color = type === "error" ? "#b42318" : "#267343";
+      }
+
+      function renderCoordinatorApplications() {
+        const list = document.getElementById("applicationList");
+        const search = document
+          .getElementById("applicationSearch")
+          .value.trim()
+          .toLowerCase();
+        const selectedStatus = document.getElementById(
+          "applicationStatusFilter",
+        ).value;
+
+        const filtered = coordinatorApplications.filter((application) => {
+          const searchable = [
+            application.student_name,
+            application.register_number,
+            application.student_email,
+            application.company_name,
+            application.job_role,
+          ]
+            .join(" ")
+            .toLowerCase();
+
+          const matchesSearch = searchable.includes(search);
+          const matchesStatus =
+            selectedStatus === "All" || application.status === selectedStatus;
+
+          return matchesSearch && matchesStatus;
+        });
+
+        if (filtered.length === 0) {
+          list.innerHTML = `
+                <div class="application-empty">
+                    No applications found for the selected search or filter.
+                </div>
+            `;
+          return;
+        }
+
+        list.innerHTML = filtered
+          .map((application) => {
+            const id = escapeApplicationHTML(application.application_id);
+            const status = application.status || "Applied";
+
+            const statuses = [
+              "Applied",
+              "Under Review",
+              "Shortlisted",
+              "Interview",
+              "Selected",
+              "Not Selected",
+              "Withdrawn",
+            ];
+
+            const statusOptions = statuses
+              .map(
+                (option) => `
+                <option value="${option}"
+                    ${status === option ? "selected" : ""}>
+                    ${option}
+                </option>
+            `,
+              )
+              .join("");
+
+            return `
+                <article class="application-card">
+                    <h3>${escapeApplicationHTML(application.student_name)}</h3>
+
+                    <p>
+                        <strong>${escapeApplicationHTML(application.job_role)}</strong>
+                        at ${escapeApplicationHTML(application.company_name)}
+                    </p>
+
+                    <div class="application-details">
+                        <p><strong>Application ID:</strong> ${id}</p>
+                        <p><strong>Register Number:</strong>
+                            ${escapeApplicationHTML(application.register_number)}</p>
+                        <p><strong>Email:</strong>
+                            ${escapeApplicationHTML(application.student_email)}</p>
+                        <p><strong>Branch:</strong>
+                            ${escapeApplicationHTML(application.branch)}</p>
+                        <p><strong>Semester:</strong>
+                            ${escapeApplicationHTML(application.semester)}</p>
+                        <p><strong>CGPA:</strong>
+                            ${escapeApplicationHTML(application.cgpa)}</p>
+                        <p><strong>Applied Date:</strong>
+                            ${escapeApplicationHTML(application.applied_date)}</p>
+                        <p><strong>Current Status:</strong>
+                            ${escapeApplicationHTML(status)}</p>
+                    </div>
+
+                    <form class="application-update-form"
+                          data-application-id="${id}">
+                        <label>Update Application Status</label>
+
+                        <select name="status" required>
+                            ${statusOptions}
+                        </select>
+
+                        <label>Remarks</label>
+
+                        <textarea name="remarks"
+                                  rows="3"
+                                  placeholder="Enter feedback or remarks...">${escapeApplicationHTML(application.remarks || "")}</textarea>
+
+                        <button type="submit">Save Application Update</button>
+                    </form>
+                </article>
+            `;
+          })
+          .join("");
+      }
+
+      async function loadCoordinatorApplications() {
+        const list = document.getElementById("applicationList");
+
+        try {
+          const data = await companyRequest("/api/applications/manage");
+
+          coordinatorApplications = Array.isArray(data)
+            ? data
+            : data.applications || [];
+
+          renderCoordinatorApplications();
+        } catch (error) {
+          list.innerHTML = `
+                <div class="application-empty">
+                    Unable to load applications: ${escapeApplicationHTML(error.message)}
+                </div>
+            `;
+        }
+      }
+
+      document
+        .getElementById("applicationSearch")
+        .addEventListener("input", renderCoordinatorApplications);
+
+      document
+        .getElementById("applicationStatusFilter")
+        .addEventListener("change", renderCoordinatorApplications);
+
+      document
+        .getElementById("applicationList")
+        .addEventListener("submit", async function (event) {
+          const form = event.target.closest(".application-update-form");
+
+          if (!form) return;
+
+          event.preventDefault();
+
+          const applicationId = form.dataset.applicationId;
+          const button = form.querySelector("button");
+          const status = form.elements.status.value;
+          const remarks = form.elements.remarks.value.trim();
+
+          button.disabled = true;
+          button.textContent = "Saving...";
+
+          try {
+            await companyRequest(
+              "/api/applications/" + applicationId + "/status",
+              {
+                method: "PUT",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  status: status,
+                  remarks: remarks,
+                }),
+              },
+            );
+
+            showApplicationMessage(
+              "Application updated successfully. Student notification is handled automatically.",
+            );
+
+            await loadCoordinatorApplications();
+            await loadPlacementOverview();
+          } catch (error) {
+            showApplicationMessage(error.message, "error");
+            button.disabled = false;
+            button.textContent = "Save Application Update";
+          }
+        });
+
+      loadCoordinatorApplications();
+
+      // ==========================================================
+
+      async function loadPlacementOverview() {
+        const errorElement = document.getElementById("analyticsError");
+
+        try {
+          const response = await fetch("/api/analytics/placement", {
+            credentials: "same-origin",
+          });
+
+          const data = await response.json();
+
+          if (!response.ok) {
+            throw new Error(
+              data.error || "Unable to load placement statistics.",
+            );
+          }
+
+          document.getElementById("totalStudents").textContent =
+            data.total_students;
+
+          document.getElementById("totalCompanies").textContent =
+            data.total_companies;
+
+          document.getElementById("totalDrives").textContent =
+            data.total_drives;
+
+          document.getElementById("openDrives").textContent = data.open_drives;
+
+          document.getElementById("totalApplications").textContent =
+            data.total_applications;
+
+          document.getElementById("selectedStudents").textContent =
+            data.selected_count;
+        } catch (error) {
+          errorElement.textContent = error.message;
+        }
+      }
+
+      loadPlacementOverview();
+    </script>
+  </body>
+</html>

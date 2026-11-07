@@ -48,12 +48,124 @@
         color: red;
         margin-top: 20px;
       }
+
+      /* ===== Smart Campus Hub Burgundy Analytics Theme ===== */
+
+      body {
+        background: #f7f5f6;
+        color: #352b30;
+        font-family: Arial, sans-serif;
+      }
+
+      h1 {
+        color: #70243d;
+        font-weight: 700;
+        padding-bottom: 15px;
+        border-bottom: 3px solid #70243d;
+      }
+
+      .section-title {
+        color: #70243d;
+        font-size: 23px;
+        font-weight: 700;
+        padding-left: 12px;
+        border-left: 5px solid #70243d;
+        margin-top: 38px;
+        margin-bottom: 20px;
+      }
+
+      .dashboard-card,
+      .chart-card {
+        background: #ffffff;
+        border: 1px solid #eadde1;
+        border-radius: 13px;
+        box-shadow: 0 4px 14px rgba(75, 30, 48, 0.06);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+      }
+
+      .dashboard-card:hover,
+      .chart-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 7px 18px rgba(75, 30, 48, 0.10);
+      }
+
+      .dashboard-card h3 {
+        color: #70243d;
+        font-size: 29px;
+        font-weight: 700;
+      }
+
+      .dashboard-card p {
+        color: #766b70 !important;
+        font-size: 14px;
+      }
+
+      .chart-card {
+        padding: 22px;
+        height: 100%;
+      }
+
+      .chart-card h4 {
+        color: #70243d;
+        font-size: 17px;
+        font-weight: 700;
+        margin-bottom: 18px;
+      }
+
+      .table {
+        --bs-table-striped-bg: #faf5f7;
+        --bs-table-hover-bg: #f3e8ed;
+        color: #493b42;
+        vertical-align: middle;
+      }
+
+      .table thead th {
+        background: #70243d;
+        color: #ffffff;
+        border-color: #70243d;
+        font-weight: 600;
+        white-space: nowrap;
+      }
+
+      .table td {
+        padding: 12px 10px;
+      }
+
+      #error {
+        color: #b42318;
+        background: #fff0ef;
+        border-radius: 8px;
+        padding: 10px;
+      }
+
+      @media (max-width: 576px) {
+        .section-title {
+          font-size: 20px;
+        }
+
+        .chart-card {
+          padding: 15px;
+        }
+
+        .chart-container {
+          height: 250px;
+        }
+      }
+
     </style>
   </head>
 
   <body>
     <div class="container-fluid py-4">
       <h1 class="mb-4">Smart Campus Analytics Dashboard</h1>
+
+      <a href="/coordinator/dashboard"
+         style="display:inline-block; margin-bottom:20px;
+                padding:10px 18px; background:#70243d;
+                color:white; text-decoration:none;
+                border-radius:8px; font-weight:600;">
+        ← Back to Coordinator Dashboard
+      </a>
 
       <!-- ==================== PLACEMENT ANALYTICS ==================== -->
 
@@ -329,6 +441,19 @@
               {
                 label: datasetLabel,
                 data: values,
+                backgroundColor:
+                  type === "doughnut"
+                    ? ["#70243d", "#91445e", "#b76b83", "#d69aaa", "#ead0d8"]
+                    : "rgba(112, 36, 61, 0.78)",
+                borderColor:
+                  type === "doughnut"
+                    ? "#ffffff"
+                    : "#70243d",
+                borderWidth: 1,
+                hoverBackgroundColor:
+                  type === "doughnut"
+                    ? ["#56182e", "#78334c", "#9e536d", "#c17e93", "#dfb5c1"]
+                    : "#56182e",
               },
             ],
           },

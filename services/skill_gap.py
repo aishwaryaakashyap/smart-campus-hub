@@ -2,14 +2,80 @@
 import re
 
 
-def _get_learning_priority(skill_name, description):
-    """Estimate priority using the closest relevant wording for a skill."""
+# Alternative phrases used in placement descriptions.
+# Each alias maps to an existing skill in the database.
+SKILL_ALIASES = {
+    "Database Management": [
+        "database",
+        "databases",
+        "database management",
+        "database administration",
+        "dbms",
+    ],
+    "Problem-solving": [
+        "problem solving",
+        "problem-solving",
+        "problem solving abilities",
+        "problem-solving abilities",
+    ],
+    "Machine Learning": [
+        "machine learning",
+        "ml",
+        "ml techniques",
+    ],
+    "Data Structures": [
+        "data structure",
+        "data structures",
+        "data structures and algorithms",
+        "dsa",
+    ],
+    "API Development": [
+        "api development",
+        "api",
+        "apis",
+        "rest api",
+        "restful api",
+    ],
+    "Communication": [
+        "communication",
+        "communication skills",
+        "verbal communication",
+    ],
+}
 
-    skill_pattern = re.compile(
-        r"(?<!\w)" + re.escape(skill_name) + r"(?!\w)",
-        re.IGNORECASE,
-    )
-    skill_match = skill_pattern.search(description)
+
+def _get_skill_patterns(skill_name):
+    """Return the canonical skill name and its recognised aliases."""
+
+    aliases = SKILL_ALIASES.get(skill_name, [])
+
+    phrases = [skill_name] + aliases
+
+    return [
+        re.compile(
+            r"(?<!\w)" + re.escape(phrase) + r"(?!\w)",
+            re.IGNORECASE,
+        )
+        for phrase in phrases
+    ]
+
+
+def _find_skill_match(skill_name, description):
+    """Find a canonical skill name or one of its aliases."""
+
+    for pattern in _get_skill_patterns(skill_name):
+        match = pattern.search(description)
+
+        if match:
+            return match
+
+    return None
+
+
+def _get_learning_priority(skill_name, description):
+    """Estimate learning priority using the relevant wording."""
+
+    skill_match = _find_skill_match(skill_name, description)
 
     if not skill_match:
         return "Medium"
@@ -27,8 +93,6 @@ def _get_learning_priority(skill_name, description):
         re.IGNORECASE,
     )
 
-    # Find the clause containing this skill.
-    # Conjunctions and punctuation separate nearby skill requirements.
     clauses = re.split(
         r"[,.;!?\n]+|\b(?:but|whereas|while)\b",
         description,
@@ -39,7 +103,7 @@ def _get_learning_priority(skill_name, description):
         (
             clause
             for clause in clauses
-            if skill_pattern.search(clause)
+            if _find_skill_match(skill_name, clause)
         ),
         "",
     )
@@ -54,9 +118,8 @@ def _get_learning_priority(skill_name, description):
         return "Low"
 
     if has_high and has_low:
-        # If both terms occur in the same clause, use the closest term.
-        local_skill_match = skill_pattern.search(skill_clause)
-        skill_position = local_skill_match.start()
+        local_match = _find_skill_match(skill_name, skill_clause)
+        skill_position = local_match.start()
 
         priority_matches = []
 
@@ -69,6 +132,7 @@ def _get_learning_priority(skill_name, description):
                     abs(skill_position - match.end()),
                     abs(skill_position - match.start()),
                 )
+
                 priority_matches.append((distance, priority))
 
         if priority_matches:
@@ -81,7 +145,7 @@ def _get_learning_priority(skill_name, description):
 def analyze_skill_gap(job_description, student_skills, available_skills):
     """Compare student skills with job requirements and suggest priorities."""
 
-    description = (job_description or "").lower()
+    description = job_description or ""
 
     student_skill_names = {
         (item.get("skill_name") or "").strip().lower()
@@ -103,9 +167,7 @@ def analyze_skill_gap(job_description, student_skills, available_skills):
         if normalized_name in seen_skills:
             continue
 
-        pattern = r"(?<!\w)" + re.escape(normalized_name) + r"(?!\w)"
-
-        if re.search(pattern, description):
+        if _find_skill_match(name, description):
             required_skills.append(name)
             seen_skills.add(normalized_name)
 
