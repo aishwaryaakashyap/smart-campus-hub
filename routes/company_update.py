@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify, session
 from extensions import db
-from models import CompanyUpdate, Company
+from models import CompanyUpdate, Company, User
+from services.notifications import create_notification
 
 update_bp = Blueprint('update', __name__)
 
@@ -13,6 +14,17 @@ def require_coordinator():
         return jsonify({
             'error': 'Only coordinators can perform this action'
         }), 403
+
+    return None
+
+
+def require_authenticated_user():
+    if 'user_id' not in session:
+        return jsonify({'error': 'Not logged in'}), 401
+
+    if not db.session.get(User, session['user_id']):
+        session.clear()
+        return jsonify({'error': 'Not logged in'}), 401
 
     return None
 
@@ -80,6 +92,17 @@ def post_update():
 
     try:
         db.session.add(new_update)
+
+        students = User.query.filter_by(role='student').all()
+
+        for student in students:
+            create_notification(
+                user_id=student.id,
+                title=f'New Company Update: {company.name}',
+                message=f'{new_update.title}: {new_update.message}',
+                notification_type='company_update'
+            )
+
         db.session.commit()
     except Exception:
         db.session.rollback()
@@ -95,6 +118,10 @@ def post_update():
 
 @update_bp.route('/company/<int:company_id>', methods=['GET'])
 def list_updates_for_company(company_id):
+    auth_error = require_authenticated_user()
+    if auth_error:
+        return auth_error
+
     company = db.session.get(Company, company_id)
 
     if not company:
@@ -124,6 +151,10 @@ def list_updates_for_company(company_id):
 
 @update_bp.route('/', methods=['GET'])
 def list_all_updates():
+    auth_error = require_authenticated_user()
+    if auth_error:
+        return auth_error
+
     updates = (
         CompanyUpdate.query
         .order_by(CompanyUpdate.posted_at.desc())

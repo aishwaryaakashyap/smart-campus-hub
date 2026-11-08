@@ -29,6 +29,7 @@ from routes.auth import auth_bp
 from routes.placement_drive import drive_bp
 from routes.application import application_bp
 from routes.student import student_bp
+from routes.resume import resume_bp
 from routes.company_update import update_bp
 from routes.interview import interview_bp
 from routes.interview_intelligence import intelligence_bp
@@ -62,6 +63,7 @@ app.register_blueprint(application_bp, url_prefix="/api/applications")
 
 # Student profiles
 app.register_blueprint(student_bp, url_prefix="/api/students")
+app.register_blueprint(resume_bp, url_prefix="/api/resumes")
 
 # Company announcements
 app.register_blueprint(update_bp, url_prefix="/api/updates")

@@ -20,7 +20,16 @@ class InterviewIntelligenceTests(unittest.TestCase):
         self.app_context.push()
         self.client = app.test_client()
 
+        self.student_query_patcher = patch(
+            "routes.interview_intelligence.Student.query"
+        )
+        self.student_query = self.student_query_patcher.start()
+        self.student_query.filter_by.return_value.first.return_value = (
+            SimpleNamespace(id=1)
+        )
+
     def tearDown(self):
+        self.student_query_patcher.stop()
         self.app_context.pop()
         app.config["TESTING"] = self.previous_testing
         app.config["WTF_CSRF_ENABLED"] = self.previous_csrf
@@ -45,6 +54,18 @@ class InterviewIntelligenceTests(unittest.TestCase):
         self.assertEqual(
             response.get_json()["error"],
             "Only students can view interview intelligence",
+        )
+
+    def test_returns_404_when_student_profile_is_missing(self):
+        self.set_session()
+        self.student_query.filter_by.return_value.first.return_value = None
+
+        response = self.client.get("/api/intelligence/company/1")
+
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(
+            response.get_json()["error"],
+            "Student profile not found. Create your profile first."
         )
 
     def test_returns_404_for_unknown_company(self):
