@@ -3,7 +3,7 @@ from collections import Counter, defaultdict
 
 from flask import Blueprint, jsonify, session
 
-from models import Company, InterviewExperience
+from models import Company, InterviewExperience, Student
 
 
 intelligence_bp = Blueprint("intelligence", __name__)
@@ -129,6 +129,15 @@ def company_intelligence(company_id):
         return jsonify({
             "error": "Only students can view interview intelligence"
         }), 403
+
+    student = Student.query.filter_by(
+        user_id=session["user_id"]
+    ).first()
+
+    if not student:
+        return jsonify({
+            "error": "Student profile not found. Create your profile first."
+        }), 404
 
     company = Company.query.get(company_id)
 

@@ -882,6 +882,90 @@
     white-space: pre-wrap;
 }
 
+
+    /* Resume Analysis */
+    .resume-panel {
+        background: #ffffff;
+        border: 1px solid #eadde2;
+        border-left: 4px solid #762642;
+        border-radius: 11px;
+        padding: 22px;
+        margin: 18px 0;
+        box-shadow: 0 4px 15px rgba(65, 25, 42, 0.06);
+    }
+
+    .resume-panel h3,
+    .resume-panel h4 {
+        color: #57182e;
+    }
+
+    .resume-panel input,
+    .resume-panel select {
+        width: 100%;
+        max-width: 550px;
+        display: block;
+        padding: 11px;
+        margin: 8px 0 14px;
+        border: 1px solid #d8c3cc;
+        border-radius: 7px;
+        background: #ffffff;
+    }
+
+    .resume-panel button {
+        margin-top: 8px;
+    }
+
+    .resume-muted {
+        color: #766b70;
+        font-size: 14px;
+    }
+
+    .resume-skill-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 9px;
+        margin: 12px 0;
+    }
+
+    .resume-skill-chip {
+        display: inline-block;
+        background: #f7e9ee;
+        color: #762642;
+        border: 1px solid #ead0da;
+        padding: 7px 12px;
+        border-radius: 20px;
+        font-size: 13px;
+        font-weight: 600;
+    }
+
+    .resume-result-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 15px;
+        margin-top: 15px;
+    }
+
+    .resume-result-box {
+        background: #fbf7f8;
+        border: 1px solid #eadde2;
+        border-radius: 9px;
+        padding: 15px;
+    }
+
+    .resume-match-value {
+        color: #762642;
+        font-size: 27px;
+        font-weight: 700;
+        margin: 5px 0;
+    }
+
+    .resume-priority {
+        border-left: 3px solid #762642;
+        padding: 9px 12px;
+        margin: 10px 0;
+        background: #fbf7f8;
+    }
+
 </style>
 </head>
 
@@ -908,6 +992,10 @@
 
         <button type="button" onclick="loadSection('skills')">
             My Skills
+        </button>
+
+        <button type="button" onclick="loadSection('resume')">
+            Resume Analysis
         </button>
 
         <button type="button" onclick="loadSection('interviews')">
@@ -963,6 +1051,12 @@
             </div>
 
             <div class="card clickable-card"
+                 onclick="loadSection('resume')">
+                <h3>Resume &amp; Career Intelligence</h3>
+                <p>Upload your resume and analyse it against placement drives.</p>
+            </div>
+
+            <div class="card clickable-card"
                  onclick="loadSection('interviews')">
                 <h3>Interview Experiences</h3>
                 <p>Browse experiences by company.</p>
@@ -1011,6 +1105,7 @@
             applications: "My Applications",
             profile: "My Profile",
             skills: "My Skills",
+            resume: "Resume & Career Intelligence",
             interviews: "Interview Experiences",
             grievances: "My Grievances",
             notifications: "My Notifications",
@@ -2523,6 +2618,52 @@
                     const rating = item.average_importance_rating;
                     addInterviewText(panel, "p", (item.skill || "Skill") + " - importance: " + (rating == null ? "Not rated" : rating + "/5") + ", mentioned " + (item.times_mentioned ?? 0) + " time(s)");
                 });
+
+                addInterviewText(panel, "h4", "Preparation Resources");
+                if (Array.isArray(data.preparation_resources) &&
+                    data.preparation_resources.length) {
+                    data.preparation_resources.forEach(resource => {
+                        const item = document.createElement("div");
+                        item.style.marginBottom = "12px";
+
+                        addInterviewText(
+                            item,
+                            "p",
+                            (resource.resource_type || "Resource") +
+                            ": " +
+                            (resource.resource_name || "Unnamed resource")
+                        );
+
+                        if (resource.description) {
+                            addInterviewText(
+                                item, "p", resource.description
+                            );
+                        }
+
+                        if (resource.url) {
+                            try {
+                                const parsedUrl = new URL(resource.url);
+
+                                if (["http:", "https:"].includes(parsedUrl.protocol)) {
+                                    const link = document.createElement("a");
+                                    link.href = parsedUrl.href;
+                                    link.target = "_blank";
+                                    link.rel = "noopener noreferrer";
+                                    link.textContent = "Open resource";
+                                    item.appendChild(link);
+                                }
+                            } catch (error) {
+                                // Do not render invalid resource URLs.
+                            }
+                        }
+
+                        panel.appendChild(item);
+                    });
+                } else {
+                    addInterviewText(
+                        panel, "p", "No preparation resources recorded."
+                    );
+                }
             } catch (error) {
                 loading.textContent =
                     "Unable to connect to the server while loading company insights.";
@@ -2789,6 +2930,476 @@
             content.appendChild(grid);
         }
 
+
+
+        async function loadResumeAnalysis(content) {
+            const previousPanel = document.getElementById(
+                "resume-analysis-content"
+            );
+
+            if (previousPanel) {
+                previousPanel.remove();
+            }
+
+            const root = document.createElement("div");
+            root.id = "resume-analysis-content";
+            content.appendChild(root);
+
+            function addText(parent, tag, value, className = "") {
+                const element = document.createElement(tag);
+                element.textContent = value;
+
+                if (className) {
+                    element.className = className;
+                }
+
+                parent.appendChild(element);
+                return element;
+            }
+
+            function addSkillChips(parent, skills) {
+                const wrapper = document.createElement("div");
+                wrapper.className = "resume-skill-list";
+
+                skills.forEach(skill => {
+                    addText(wrapper, "span", String(skill), "resume-skill-chip");
+                });
+
+                parent.appendChild(wrapper);
+            }
+
+            function addResultList(parent, heading, values, emptyMessage) {
+                addText(parent, "h4", heading);
+
+                if (!Array.isArray(values) || values.length === 0) {
+                    addText(parent, "p", emptyMessage, "resume-muted");
+                    return;
+                }
+
+                const list = document.createElement("ul");
+
+                values.forEach(value => {
+                    addText(list, "li", String(value));
+                });
+
+                parent.appendChild(list);
+            }
+
+            // Upload and replace resume.
+            const uploadPanel = document.createElement("section");
+            uploadPanel.className = "resume-panel";
+            root.appendChild(uploadPanel);
+
+            addText(uploadPanel, "h3", "Upload Your Resume");
+            addText(
+                uploadPanel,
+                "p",
+                "Upload a PDF resume to extract your skills and compare "
+                + "them with placement-drive requirements.",
+                "resume-muted"
+            );
+
+            const uploadForm = document.createElement("form");
+
+            const fileLabel = addText(
+                uploadForm, "label", "Choose PDF Resume"
+            );
+
+            const fileInput = document.createElement("input");
+            fileInput.type = "file";
+            fileInput.name = "resume";
+            fileInput.accept = ".pdf,application/pdf";
+            fileInput.required = true;
+            fileLabel.appendChild(fileInput);
+
+            addText(
+                uploadForm,
+                "p",
+                "PDF only. Maximum file size: 5 MB.",
+                "resume-muted"
+            );
+
+            const uploadButton = document.createElement("button");
+            uploadButton.type = "submit";
+            uploadButton.textContent = "Upload / Replace Resume";
+            uploadForm.appendChild(uploadButton);
+
+            const uploadStatus = addText(uploadPanel, "p", "");
+
+            uploadForm.addEventListener("submit", async event => {
+                event.preventDefault();
+
+                if (!fileInput.files.length) {
+                    uploadStatus.textContent = "Please select a PDF file.";
+                    uploadStatus.className = "error";
+                    return;
+                }
+
+                const selectedFile = fileInput.files[0];
+
+                if (!selectedFile.name.toLowerCase().endsWith(".pdf")) {
+                    uploadStatus.textContent = "Only PDF files are accepted.";
+                    uploadStatus.className = "error";
+                    return;
+                }
+
+                if (selectedFile.size > 5 * 1024 * 1024) {
+                    uploadStatus.textContent =
+                        "The PDF must be smaller than 5 MB.";
+                    uploadStatus.className = "error";
+                    return;
+                }
+
+                const formData = new FormData();
+                formData.append("resume", selectedFile);
+
+                uploadButton.disabled = true;
+                uploadButton.textContent = "Uploading...";
+                uploadStatus.textContent = "";
+
+                try {
+                    const response = await fetch("/api/resumes/", {
+                        method: "POST",
+                        credentials: "same-origin",
+                        headers: {
+                            "X-CSRFToken": csrfToken
+                        },
+                        body: formData
+                    });
+
+                    const data = await response.json();
+
+                    if (!response.ok) {
+                        throw new Error(
+                            data.error || "Unable to upload your resume."
+                        );
+                    }
+
+                    // Reload the section so the newly saved resume appears.
+                    await loadResumeAnalysis(content);
+
+                } catch (error) {
+                    uploadStatus.textContent = error.message;
+                    uploadStatus.className = "error";
+                    uploadButton.disabled = false;
+                    uploadButton.textContent = "Upload / Replace Resume";
+                }
+            });
+
+            uploadPanel.appendChild(uploadForm);
+
+            // Display current resume.
+            let resume = null;
+
+            const currentPanel = document.createElement("section");
+            currentPanel.className = "resume-panel";
+            root.appendChild(currentPanel);
+
+            addText(currentPanel, "h3", "Current Resume");
+
+            try {
+                const response = await fetch("/api/resumes/", {
+                    credentials: "same-origin"
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    resume = data.resume;
+
+                    addText(
+                        currentPanel,
+                        "p",
+                        "File: " + (resume.original_filename || "Resume")
+                    );
+
+                    if (resume.uploaded_at) {
+                        addText(
+                            currentPanel,
+                            "p",
+                            "Uploaded: " +
+                            new Date(resume.uploaded_at).toLocaleString("en-IN"),
+                            "resume-muted"
+                        );
+                    }
+
+                    addText(currentPanel, "h4", "Extracted Skills");
+
+                    if (
+                        Array.isArray(resume.extracted_skills) &&
+                        resume.extracted_skills.length
+                    ) {
+                        addSkillChips(
+                            currentPanel,
+                            resume.extracted_skills
+                        );
+                    } else {
+                        addText(
+                            currentPanel,
+                            "p",
+                            "No matching skills were found in the skill catalogue.",
+                            "resume-muted"
+                        );
+                    }
+
+                } else if (response.status === 404) {
+                    addText(
+                        currentPanel,
+                        "p",
+                        "No resume uploaded yet. Upload a PDF to begin.",
+                        "resume-muted"
+                    );
+                } else {
+                    addText(
+                        currentPanel,
+                        "p",
+                        data.error || "Unable to load resume information.",
+                        "error"
+                    );
+                }
+
+            } catch (error) {
+                addText(
+                    currentPanel,
+                    "p",
+                    "Unable to connect to the resume service.",
+                    "error"
+                );
+            }
+
+            // Select a placement drive for matching.
+            const matchPanel = document.createElement("section");
+            matchPanel.className = "resume-panel";
+            root.appendChild(matchPanel);
+
+            addText(matchPanel, "h3", "Resume-to-Job Matching");
+            addText(
+                matchPanel,
+                "p",
+                "Choose an open placement drive to compare its requirements "
+                + "with the skills detected in your resume.",
+                "resume-muted"
+            );
+
+            const driveSelect = document.createElement("select");
+            const placeholder = document.createElement("option");
+            placeholder.value = "";
+            placeholder.textContent = "-- Select placement drive --";
+            driveSelect.appendChild(placeholder);
+
+            const matchButton = document.createElement("button");
+            matchButton.type = "button";
+            matchButton.textContent = "Analyse Resume Against Drive";
+            matchButton.disabled = !resume;
+
+            const matchStatus = addText(matchPanel, "p", "");
+            const results = document.createElement("div");
+
+            matchPanel.append(
+                driveSelect,
+                matchButton,
+                matchStatus,
+                results
+            );
+
+            let openDrives = [];
+
+            try {
+                const response = await fetch("/api/drives/", {
+                    credentials: "same-origin"
+                });
+
+                const drives = await response.json();
+
+                if (!response.ok || !Array.isArray(drives)) {
+                    throw new Error(
+                        drives.error || "Unable to load placement drives."
+                    );
+                }
+
+                openDrives = drives.filter(
+                    drive =>
+                        String(drive.status || "").toLowerCase() === "open"
+                );
+
+                openDrives.forEach(drive => {
+                    const option = document.createElement("option");
+                    option.value = String(drive.id);
+                    option.textContent =
+                        (drive.company_name || "Company")
+                        + " — "
+                        + (drive.job_role || "Role not specified");
+
+                    driveSelect.appendChild(option);
+                });
+
+                if (openDrives.length === 0) {
+                    addText(
+                        matchPanel,
+                        "p",
+                        "There are no open placement drives available for matching.",
+                        "resume-muted"
+                    );
+                }
+
+            } catch (error) {
+                addText(matchPanel, "p", error.message, "error");
+            }
+
+            matchButton.disabled = !resume || openDrives.length === 0;
+
+            matchButton.addEventListener("click", async () => {
+                if (!resume) {
+                    matchStatus.textContent =
+                        "Upload your resume before matching.";
+                    matchStatus.className = "error";
+                    return;
+                }
+
+                if (!driveSelect.value) {
+                    matchStatus.textContent =
+                        "Please select a placement drive.";
+                    matchStatus.className = "error";
+                    return;
+                }
+
+                matchButton.disabled = true;
+                matchButton.textContent = "Analysing...";
+                matchStatus.textContent = "";
+                results.replaceChildren();
+
+                try {
+                    const response = await fetch(
+                        "/api/resumes/match/"
+                        + encodeURIComponent(driveSelect.value),
+                        { credentials: "same-origin" }
+                    );
+
+                    const data = await response.json();
+
+                    if (!response.ok) {
+                        throw new Error(
+                            data.error || "Unable to analyse the resume."
+                        );
+                    }
+
+                    addText(
+                        results,
+                        "h4",
+                        (data.company_name || "Company")
+                        + " — "
+                        + (data.job_role || "Placement Role")
+                    );
+
+                    const scoreBox = document.createElement("div");
+                    scoreBox.className = "resume-result-box";
+
+                    addText(scoreBox, "p", "Skill Coverage", "resume-muted");
+
+                    addText(
+                        scoreBox,
+                        "p",
+                        data.match_percentage === null ||
+                        data.match_percentage === undefined
+                            ? "Not available"
+                            : data.match_percentage + "%",
+                        "resume-match-value"
+                    );
+
+                    addText(
+                        scoreBox,
+                        "p",
+                        data.match_note || "",
+                        "resume-muted"
+                    );
+
+                    results.appendChild(scoreBox);
+
+                    const grid = document.createElement("div");
+                    grid.className = "resume-result-grid";
+
+                    const groups = [
+                        [
+                            "Skills Detected in Resume",
+                            data.resume_skills,
+                            "No catalogue skills detected."
+                        ],
+                        [
+                            "Skills Required by the Drive",
+                            data.required_skills,
+                            "No catalogue requirements detected."
+                        ],
+                        [
+                            "Matched Skills",
+                            data.matched_skills,
+                            "No matching skills found."
+                        ],
+                        [
+                            "Missing Skills",
+                            data.missing_skills,
+                            "No missing catalogue skills."
+                        ]
+                    ];
+
+                    groups.forEach(([heading, values, emptyMessage]) => {
+                        const box = document.createElement("div");
+                        box.className = "resume-result-box";
+
+                        addResultList(
+                            box, heading, values, emptyMessage
+                        );
+
+                        grid.appendChild(box);
+                    });
+
+                    results.appendChild(grid);
+
+                    addText(results, "h4", "Learning Priorities");
+
+                    if (
+                        Array.isArray(data.learning_priorities) &&
+                        data.learning_priorities.length
+                    ) {
+                        data.learning_priorities.forEach(item => {
+                            const priority = document.createElement("div");
+                            priority.className = "resume-priority";
+
+                            addText(
+                                priority,
+                                "strong",
+                                (item.skill_name || "Skill")
+                                + " — "
+                                + (item.priority || "Medium")
+                                + " Priority"
+                            );
+
+                            if (item.suggestion) {
+                                addText(priority, "p", item.suggestion);
+                            }
+
+                            results.appendChild(priority);
+                        });
+                    } else {
+                        addText(
+                            results,
+                            "p",
+                            "No learning priorities were identified.",
+                            "resume-muted"
+                        );
+                    }
+
+                } catch (error) {
+                    matchStatus.textContent = error.message;
+                    matchStatus.className = "error";
+
+                } finally {
+                    matchButton.disabled =
+                        !resume || openDrives.length === 0;
+                    matchButton.textContent =
+                        "Analyse Resume Against Drive";
+                }
+            });
+        }
 
 async function renderStudentSkills(content, skills) {
     content.replaceChildren();
@@ -3164,6 +3775,11 @@ async function loadSection(section) {
             const heading = document.createElement("h2");
             heading.textContent = titles[section] || "Dashboard";
             content.appendChild(heading);
+
+            if (section === "resume") {
+                await loadResumeAnalysis(content);
+                return;
+            }
 
             if (section === "interviews") {
                 await loadInterviews(content);

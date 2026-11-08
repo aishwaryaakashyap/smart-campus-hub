@@ -38,12 +38,119 @@ def submit_experience():
         if field not in data or not data[field]:
             return jsonify({'error': f'{field} is required'}), 400
 
+    company_id = data["company_id"]
+
+    if (
+        isinstance(company_id, bool)
+        or not isinstance(company_id, int)
+        or company_id <= 0
+    ):
+        return jsonify({
+            "error": "company_id must be a positive integer"
+        }), 400
+
     if not Company.query.get(data['company_id']):
         return jsonify({'error': 'Company not found'}), 404
     if data['selection_status'] not in VALID_SELECTION:
         return jsonify({'error': f'selection_status must be one of {VALID_SELECTION}'}), 400
     if data.get('overall_difficulty') and data['overall_difficulty'] not in VALID_DIFFICULTY:
         return jsonify({'error': f'overall_difficulty must be one of {VALID_DIFFICULTY}'}), 400
+
+    # Validate nested collections before writing anything to the database.
+    collections = {
+        "rounds": data.get("rounds", []),
+        "skills": data.get("skills", []),
+        "resources": data.get("resources", [])
+    }
+
+    for field, value in collections.items():
+        if not isinstance(value, list):
+            return jsonify({
+                "error": f"{field} must be a list"
+            }), 400
+
+    for round_index, round_data in enumerate(collections["rounds"], start=1):
+        if not isinstance(round_data, dict):
+            return jsonify({
+                "error": f"Round {round_index} must be a JSON object"
+            }), 400
+
+        round_type = round_data.get("round_type")
+        if round_type and round_type not in VALID_ROUND_TYPES:
+            return jsonify({
+                "error": f"round_type must be one of {VALID_ROUND_TYPES}"
+            }), 400
+
+        round_difficulty = round_data.get("difficulty")
+        if round_difficulty and round_difficulty not in VALID_DIFFICULTY:
+            return jsonify({
+                "error": f"difficulty must be one of {VALID_DIFFICULTY}"
+            }), 400
+
+        questions = round_data.get("questions", [])
+
+        if not isinstance(questions, list):
+            return jsonify({
+                "error": f"Questions in round {round_index} must be a list"
+            }), 400
+
+        for question_index, question in enumerate(questions, start=1):
+            if not isinstance(question, dict):
+                return jsonify({
+                    "error": (
+                        f"Question {question_index} in round "
+                        f"{round_index} must be a JSON object"
+                    )
+                }), 400
+
+            question_text = question.get("question_text")
+
+            if not isinstance(question_text, str) or not question_text.strip():
+                return jsonify({
+                    "error": "question_text is required for every question"
+                }), 400
+
+            question_difficulty = question.get("difficulty")
+            if question_difficulty and question_difficulty not in VALID_DIFFICULTY:
+                return jsonify({
+                    "error": f"difficulty must be one of {VALID_DIFFICULTY}"
+                }), 400
+
+            if question.get("student_answer") or question.get("reference_answer"):
+                answer_status = question.get("answer_status", "Not Evaluated")
+                if answer_status not in VALID_ANSWER_STATUS:
+                    return jsonify({
+                        "error": (
+                            f"answer_status must be one of "
+                            f"{VALID_ANSWER_STATUS}"
+                        )
+                    }), 400
+
+    for skill_index, skill in enumerate(collections["skills"], start=1):
+        if not isinstance(skill, dict):
+            return jsonify({
+                "error": f"Skill {skill_index} must be a JSON object"
+            }), 400
+
+        skill_name = skill.get("skill_name")
+
+        if not isinstance(skill_name, str) or not skill_name.strip():
+            return jsonify({
+                "error": "skill_name is required for every skill"
+            }), 400
+
+    for resource_index, resource in enumerate(collections["resources"], start=1):
+        if not isinstance(resource, dict):
+            return jsonify({
+                "error": f"Resource {resource_index} must be a JSON object"
+            }), 400
+
+        resource_name = resource.get("resource_name")
+
+        if not isinstance(resource_name, str) or not resource_name.strip():
+            return jsonify({
+                "error": "resource_name is required for every resource"
+            }), 400
 
     exp = InterviewExperience(
         student_id=student.id,

@@ -17,3 +17,12 @@ class Config:
     SESSION_COOKIE_SECURE = os.environ.get(
         "SESSION_COOKIE_SECURE", "0"
     ).strip().lower() in ("1", "true", "yes", "on")
+
+    # Private student resume storage; never serve as static files.
+    RESUME_UPLOAD_FOLDER = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        "uploads",
+        "resumes"
+    )
+    RESUME_MAX_BYTES = 5 * 1024 * 1024
+    RESUME_MAX_TEXT_CHARS = 250000

@@ -13,6 +13,7 @@ from .interview_skill import InterviewSkill
 from .preparation_resource import PreparationResource
 from .skill import Skill
 from .student_skill import StudentSkill
+from .resume import Resume
 from .grievance_category import GrievanceCategory
 from .grievance import Grievance, GrievanceUpdate
 from .notification import Notification
