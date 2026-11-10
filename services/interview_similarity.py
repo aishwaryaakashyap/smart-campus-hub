@@ -19,7 +19,6 @@ ALIASES = {
 
 
 def _tokenize(text):
-    """Normalize text into meaningful searchable tokens."""
     if not isinstance(text, str):
         return []
 
@@ -43,9 +42,7 @@ def _tokenize(text):
 
 
 def _build_vectors(documents):
-    """Build TF-IDF vectors for a collection of questions."""
     tokenized = [_tokenize(document) for document in documents]
-
     document_frequency = Counter()
 
     for tokens in tokenized:
@@ -55,7 +52,6 @@ def _build_vectors(documents):
     vectors = []
 
     for tokens in tokenized:
-        # Handle questions that contain only stop words.
         if not tokens:
             vectors.append({})
             continue
@@ -81,7 +77,6 @@ def _build_vectors(documents):
 
 
 def _cosine_similarity(vector_a, vector_b):
-    """Calculate cosine similarity between two TF-IDF vectors."""
     if not vector_a or not vector_b:
         return 0.0
 
@@ -103,18 +98,19 @@ def _cosine_similarity(vector_a, vector_b):
     if magnitude_a == 0 or magnitude_b == 0:
         return 0.0
 
-    return max(
-        0.0,
-        min(1.0, dot_product / (magnitude_a * magnitude_b))
-    )
+    similarity = dot_product / (magnitude_a * magnitude_b)
+
+    if math.isclose(
+        similarity, 1.0,
+        rel_tol=1e-12,
+        abs_tol=1e-12
+    ):
+        return 1.0
+
+    return max(0.0, min(1.0, similarity))
 
 
 def calculate_similarity(question_a, question_b):
-    """
-    Return a TF-IDF cosine similarity score between 0 and 1.
-
-    Empty or invalid questions return 0.0.
-    """
     if not isinstance(question_a, str):
         return 0.0
 
@@ -133,26 +129,26 @@ def calculate_similarity(question_a, question_b):
 
 
 def find_similar_questions(questions, threshold=0.30):
-    """
-    Find potentially similar question pairs.
-
-    Returns original questions, their indexes and similarity scores.
-    Similarity does not prove that two questions are identical.
-    """
     if (
         not isinstance(threshold, (int, float))
         or isinstance(threshold, bool)
     ):
-        raise ValueError("Threshold must be a number between 0 and 1")
+        raise ValueError(
+            "Threshold must be a number between 0 and 1"
+        )
 
-    if not 0 <= threshold <= 1:
-        raise ValueError("Threshold must be between 0 and 1")
+    if not math.isfinite(threshold) or not 0 <= threshold <= 1:
+        raise ValueError(
+            "Threshold must be between 0 and 1"
+        )
 
     if questions is None:
         return []
 
     if not isinstance(questions, (list, tuple)):
-        raise TypeError("Questions must be a list or tuple")
+        raise TypeError(
+            "Questions must be a list or tuple"
+        )
 
     valid_questions = [
         (index, question)
@@ -165,22 +161,23 @@ def find_similar_questions(questions, threshold=0.30):
 
     texts = [question for _, question in valid_questions]
     vectors = _build_vectors(texts)
-
     matches = []
 
     for i in range(len(valid_questions)):
         for j in range(i + 1, len(valid_questions)):
             score = _cosine_similarity(vectors[i], vectors[j])
 
-            if score >= threshold:
-                matches.append({
-                    "question_1": valid_questions[i][1],
-                    "question_2": valid_questions[j][1],
-                    "index_1": valid_questions[i][0],
-                    "index_2": valid_questions[j][0],
-                    "similarity": round(score, 4),
-                    "label": "Potentially similar"
-                })
+            if score <= 0 or score < threshold:
+                continue
+
+            matches.append({
+                "question_1": valid_questions[i][1],
+                "question_2": valid_questions[j][1],
+                "index_1": valid_questions[i][0],
+                "index_2": valid_questions[j][0],
+                "similarity": round(score, 4),
+                "label": "Potentially similar"
+            })
 
     return sorted(
         matches,

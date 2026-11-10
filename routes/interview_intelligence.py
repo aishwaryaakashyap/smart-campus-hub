@@ -1,9 +1,17 @@
 
 from collections import Counter, defaultdict
 
-from flask import Blueprint, jsonify, session
+from flask import Blueprint, current_app, jsonify, request, session
 
-from models import Company, InterviewExperience, Student
+from models import (
+    Company,
+    InterviewExperience,
+    InterviewQuestion,
+    InterviewRound,
+    Student,
+)
+
+from services.interview_similarity import find_similar_questions
 
 
 intelligence_bp = Blueprint("intelligence", __name__)
@@ -119,6 +127,50 @@ def build_preparation_recommendations(
     return recommendations
 
 
+def get_potentially_similar_questions(company_id, threshold):
+    """Find potentially similar recorded questions for one company."""
+    question_records = (
+        InterviewQuestion.query
+        .join(
+            InterviewRound,
+            InterviewQuestion.round_id == InterviewRound.id,
+        )
+        .join(
+            InterviewExperience,
+            InterviewRound.experience_id == InterviewExperience.id,
+        )
+        .filter(InterviewExperience.company_id == company_id)
+        .order_by(InterviewQuestion.id)
+        .all()
+    )
+
+    question_texts = [
+        question.question_text for question in question_records
+    ]
+
+    matches = find_similar_questions(
+        question_texts,
+        threshold=threshold,
+    )
+
+    potentially_similar = []
+
+    for match in matches:
+        first_question = question_records[match["index_1"]]
+        second_question = question_records[match["index_2"]]
+
+        potentially_similar.append({
+            "question_id_1": first_question.id,
+            "question_id_2": second_question.id,
+            "question_1": first_question.question_text,
+            "question_2": second_question.question_text,
+            "similarity": match["similarity"],
+            "label": "Potentially Similar",
+        })
+
+    return potentially_similar
+
+
 @intelligence_bp.route("/company/<int:company_id>", methods=["GET"])
 def company_intelligence(company_id):
     # Only authenticated students can access interview intelligence.
@@ -144,6 +196,29 @@ def company_intelligence(company_id):
     if not company:
         return jsonify({"error": "Company not found"}), 404
 
+    # Use the configured threshold unless a request supplies an override.
+    threshold_value = request.args.get("similarity_threshold")
+
+    try:
+        if threshold_value is not None:
+            similarity_threshold = float(threshold_value)
+        else:
+            similarity_threshold = float(
+                current_app.config.get(
+                    "INTERVIEW_SIMILARITY_THRESHOLD",
+                    0.30,
+                )
+            )
+
+        # The service validates that the threshold is between 0 and 1.
+        # It also rejects booleans and invalid numeric values.
+        find_similar_questions([], threshold=similarity_threshold)
+
+    except (TypeError, ValueError):
+        return jsonify({
+            "error": "Similarity threshold must be a number between 0 and 1"
+        }), 400
+
     experiences = InterviewExperience.query.filter_by(
         company_id=company_id
     ).all()
@@ -159,6 +234,7 @@ def company_intelligence(company_id):
             "skill_priorities": [],
             "preparation_recommendations": [],
             "preparation_resources": [],
+            "potentially_similar_questions": [],
         }), 200
 
     total = len(experiences)
@@ -283,6 +359,11 @@ def company_intelligence(company_id):
         average_difficulty_score=average_difficulty_score,
     )
 
+    potentially_similar_questions = get_potentially_similar_questions(
+        company_id=company_id,
+        threshold=similarity_threshold,
+    )
+
     return jsonify({
         "company_name": company.name,
         "total_experiences": total,
@@ -299,4 +380,5 @@ def company_intelligence(company_id):
         "skill_priorities": skill_priorities,
         "preparation_recommendations": preparation_recommendations,
         "preparation_resources": preparation_resources,
+        "potentially_similar_questions": potentially_similar_questions,
     }), 200
