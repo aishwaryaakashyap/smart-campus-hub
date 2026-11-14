@@ -1,0 +1,80 @@
+/* Smart Campus Hub - Student Dashboard Refinements */
+
+.cards {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 20px;
+    align-items: stretch;
+}
+
+.cards > .clickable-card {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    min-height: 155px;
+    padding: 25px;
+    border: 1px solid var(--sch-border);
+    border-top: 4px solid var(--sch-brand);
+    border-radius: var(--sch-radius-lg);
+    background: var(--sch-surface);
+    box-shadow: var(--sch-card-shadow);
+    transition: transform 0.2s ease, box-shadow 0.2s ease,
+                border-color 0.2s ease;
+}
+
+.cards > .clickable-card:hover {
+    transform: translateY(-4px);
+    border-color: #d7b2c0;
+    box-shadow: 0 10px 26px rgba(65, 25, 42, 0.11);
+}
+
+.cards > .clickable-card h3 {
+    margin-bottom: 10px;
+    color: var(--sch-brand);
+    font-size: 17px;
+    line-height: 1.4;
+}
+
+.cards > .clickable-card p {
+    color: var(--sch-muted);
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+nav {
+    gap: 10px;
+}
+
+nav button {
+    min-height: 40px;
+    border-radius: var(--sch-radius-sm);
+}
+
+@media (max-width: 900px) {
+    .cards {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 16px;
+    }
+}
+
+@media (max-width: 560px) {
+    .cards {
+        grid-template-columns: 1fr;
+        gap: 14px;
+    }
+
+    .cards > .clickable-card {
+        min-height: 125px;
+        padding: 20px;
+    }
+
+    nav button {
+        flex: 1 1 140px;
+    }
+}
+
+@media (hover: none) {
+    .cards > .clickable-card:hover {
+        transform: none;
+    }
+}

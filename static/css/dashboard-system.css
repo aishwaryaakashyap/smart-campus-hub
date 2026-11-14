@@ -1,0 +1,71 @@
+/* Smart Campus Hub - Shared Dashboard Design Foundation */
+
+:root {
+    --sch-brand: #762642;
+    --sch-brand-dark: #57182e;
+    --sch-brand-soft: #f8edf1;
+
+    --sch-page: #f7f5f6;
+    --sch-surface: #ffffff;
+    --sch-text: #30252a;
+    --sch-muted: #766b70;
+    --sch-border: #eadfe3;
+
+    --sch-focus: #b65b7b;
+
+    --sch-radius-sm: 6px;
+    --sch-radius-md: 10px;
+    --sch-radius-lg: 14px;
+
+    --sch-card-shadow: 0 5px 20px rgba(65, 25, 42, 0.06);
+}
+
+/* Consistent typography across dashboard pages */
+body {
+    font-family: "Segoe UI", Arial, sans-serif;
+    line-height: 1.5;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* Form controls inherit the dashboard typography */
+button,
+input,
+select,
+textarea {
+    font-family: inherit;
+}
+
+/* Clear keyboard navigation indicators */
+:where(
+    button,
+    a,
+    input,
+    select,
+    textarea,
+    summary,
+    [tabindex]
+):focus-visible {
+    outline: 3px solid var(--sch-focus);
+    outline-offset: 2px;
+}
+
+/* Keep media within its available layout space */
+img,
+svg,
+video,
+canvas {
+    max-width: 100%;
+}
+
+/* Respect the user's reduced-motion preference */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        scroll-behavior: auto !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}

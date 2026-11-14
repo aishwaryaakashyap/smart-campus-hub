@@ -1,0 +1,255 @@
+/* Smart Campus Hub - Skill Gap Analysis */
+
+:root {
+    --gap-brand: #762642;
+    --gap-brand-dark: #57182e;
+    --gap-brand-soft: #f8edf1;
+    --gap-page: #f7f5f6;
+    --gap-text: #30252a;
+    --gap-muted: #766b70;
+    --gap-border: #eadfe3;
+    --gap-shadow: 0 5px 20px rgba(65, 25, 42, 0.06);
+}
+
+body {
+    background: var(--gap-page);
+    color: var(--gap-text);
+    font-family: "Segoe UI", Arial, sans-serif;
+}
+
+.navbar {
+    background: linear-gradient(120deg, var(--gap-brand-dark), var(--gap-brand));
+    box-shadow: 0 3px 14px rgba(65, 25, 42, 0.12);
+}
+
+.navbar-brand {
+    letter-spacing: 0.2px;
+}
+
+.hero {
+    background: linear-gradient(120deg, var(--gap-brand-dark), #873b52);
+    color: #ffffff;
+    padding: clamp(22px, 4vw, 32px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 17px;
+    box-shadow: 0 8px 24px rgba(65, 25, 42, 0.13);
+}
+
+.hero h1 {
+    color: #ffffff;
+    font-size: clamp(25px, 3vw, 34px);
+    line-height: 1.25;
+}
+
+.hero p {
+    line-height: 1.6;
+}
+
+.card {
+    background: #ffffff;
+    border: 1px solid var(--gap-border);
+    border-radius: 14px;
+    box-shadow: var(--gap-shadow);
+}
+
+.section-title {
+    color: var(--gap-brand-dark);
+    font-weight: 700;
+    line-height: 1.35;
+    padding-left: 12px;
+    border-left: 4px solid var(--gap-brand);
+}
+
+.stat {
+    color: var(--gap-brand);
+    font-size: 30px;
+    font-weight: 750;
+    line-height: 1.2;
+}
+
+.skill-card {
+    border-top: 4px solid var(--gap-brand);
+}
+
+.matched-card {
+    border-top-color: #16865b;
+}
+
+.missing-card {
+    border-top-color: #b42318;
+}
+
+.skill {
+    display: inline-block;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    border: 1px solid var(--gap-border);
+    border-radius: 9px;
+}
+
+.priority-card {
+    background: #ffffff;
+    border-color: var(--gap-border);
+    border-radius: 11px;
+    box-shadow: 0 3px 12px rgba(65, 25, 42, 0.04);
+}
+
+.priority-high {
+    border-left-color: #b42318;
+}
+
+.priority-medium {
+    border-left-color: #b7791f;
+}
+
+.priority-low {
+    border-left-color: #16865b;
+}
+
+.label-high {
+    background: #fee8e7;
+    color: #a52a38;
+}
+
+.label-medium {
+    background: #fff4d6;
+    color: #855400;
+}
+
+.label-low {
+    background: #e5f6ed;
+    color: #176b48;
+}
+
+.progress {
+    height: 13px;
+    overflow: hidden;
+    background: #f0e8ec;
+    border-radius: 20px;
+}
+
+.progress-bar {
+    background-color: var(--gap-brand) !important;
+}
+
+.btn-primary {
+    background-color: var(--gap-brand);
+    border-color: var(--gap-brand);
+    font-weight: 600;
+    border-radius: 8px;
+}
+
+.btn-primary:hover,
+.btn-primary:focus {
+    background-color: var(--gap-brand-dark);
+    border-color: var(--gap-brand-dark);
+}
+
+.btn-primary:focus-visible,
+.form-control:focus,
+.form-select:focus {
+    box-shadow: 0 0 0 3px rgba(182, 91, 123, 0.16);
+}
+
+.form-control,
+.form-select {
+    border-color: var(--gap-border);
+    border-radius: 8px;
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: #b65b7b;
+}
+
+.table-responsive {
+    border: 1px solid var(--gap-border);
+    border-radius: 9px;
+}
+
+.table {
+    color: var(--gap-text);
+    vertical-align: middle;
+    margin-bottom: 0;
+}
+
+.table thead th {
+    color: #ffffff;
+    background: var(--gap-brand);
+    border-color: var(--gap-brand);
+    white-space: nowrap;
+    font-weight: 650;
+}
+
+.table td {
+    padding: 12px 10px;
+}
+
+.text-primary {
+    color: var(--gap-brand) !important;
+}
+
+.bg-primary {
+    background-color: var(--gap-brand) !important;
+}
+
+#error,
+#coordinatorError {
+    color: #a52a38;
+}
+
+footer {
+    color: var(--gap-muted);
+}
+
+@media (hover: hover) {
+    .card {
+        transition: box-shadow 0.2s ease, transform 0.2s ease;
+    }
+
+    .card:hover {
+        box-shadow: 0 8px 22px rgba(65, 25, 42, 0.09);
+    }
+}
+
+@media (max-width: 767px) {
+    .hero {
+        border-radius: 13px;
+    }
+
+    .card {
+        border-radius: 12px;
+    }
+
+    .section-title {
+        font-size: 19px;
+    }
+
+    .table-responsive .table {
+        min-width: 620px;
+    }
+}
+
+@media (max-width: 480px) {
+    main.container {
+        padding-top: 20px !important;
+    }
+
+    .hero {
+        padding: 21px;
+    }
+
+    .card.p-4 {
+        padding: 19px !important;
+    }
+
+    .btn-lg {
+        min-height: 46px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .card {
+        transition: none;
+    }
+}

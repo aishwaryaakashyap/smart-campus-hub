@@ -1,0 +1,207 @@
+/* Smart Campus Hub - Placement Analytics Dashboard */
+
+:root {
+    --analytics-brand: #762642;
+    --analytics-brand-dark: #57182e;
+    --analytics-brand-soft: #f8edf1;
+    --analytics-page: #f7f5f6;
+    --analytics-text: #30252a;
+    --analytics-muted: #766b70;
+    --analytics-border: #eadfe3;
+    --analytics-shadow: 0 5px 20px rgba(65, 25, 42, 0.06);
+}
+
+body {
+    background: var(--analytics-page);
+    color: var(--analytics-text);
+    font-family: "Segoe UI", Arial, sans-serif;
+}
+
+.container-fluid {
+    width: 100%;
+    max-width: 1480px;
+    margin: 0 auto;
+    padding-left: 28px;
+    padding-right: 28px;
+}
+
+.container-fluid > h1 {
+    color: var(--analytics-brand-dark);
+    font-size: clamp(25px, 3vw, 34px);
+    font-weight: 750;
+    line-height: 1.25;
+    padding-bottom: 15px;
+    border-bottom: 3px solid var(--analytics-brand);
+}
+
+.section-title {
+    color: var(--analytics-brand-dark);
+    font-size: 22px;
+    font-weight: 700;
+    line-height: 1.35;
+    padding-left: 13px;
+    border-left: 5px solid var(--analytics-brand);
+    margin-top: 36px;
+    margin-bottom: 20px;
+}
+
+.dashboard-card,
+.chart-card {
+    background: #ffffff;
+    border: 1px solid var(--analytics-border);
+    border-radius: 14px;
+    box-shadow: var(--analytics-shadow);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.dashboard-card {
+    min-height: 132px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.dashboard-card h3 {
+    color: var(--analytics-brand);
+    font-size: clamp(25px, 2.5vw, 30px);
+    font-weight: 750;
+    line-height: 1.2;
+    overflow-wrap: anywhere;
+}
+
+.dashboard-card p {
+    color: var(--analytics-muted) !important;
+    font-size: 14px;
+    line-height: 1.45;
+}
+
+.chart-card {
+    min-height: 100%;
+    padding: 22px;
+}
+
+.chart-card h4 {
+    color: var(--analytics-brand-dark);
+    font-size: 17px;
+    font-weight: 700;
+    line-height: 1.4;
+    margin-bottom: 18px;
+}
+
+.chart-container {
+    position: relative;
+    width: 100%;
+    height: 300px;
+}
+
+.chart-container canvas {
+    max-width: 100%;
+}
+
+.table-responsive {
+    max-width: 100%;
+    border: 1px solid var(--analytics-border);
+    border-radius: 9px;
+}
+
+.table {
+    --bs-table-striped-bg: #faf5f7;
+    --bs-table-hover-bg: #f3e8ed;
+    color: #493b42;
+    vertical-align: middle;
+    margin-bottom: 0;
+}
+
+.table thead th {
+    background: var(--analytics-brand);
+    color: #ffffff;
+    border-color: var(--analytics-brand);
+    font-weight: 650;
+    white-space: nowrap;
+}
+
+.table td {
+    padding: 12px 10px;
+    line-height: 1.45;
+}
+
+#error {
+    color: #a52a38;
+    background: #fff0f0;
+    border: 1px solid #f2cccc;
+    border-radius: 9px;
+    padding: 12px 15px;
+    margin-top: 18px;
+}
+
+.container-fluid a:focus-visible {
+    outline: 3px solid #b65b7b;
+    outline-offset: 3px;
+}
+
+@media (hover: hover) {
+    .dashboard-card:hover,
+    .chart-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 22px rgba(65, 25, 42, 0.10);
+    }
+}
+
+@media (max-width: 767px) {
+    .container-fluid {
+        padding-left: 18px;
+        padding-right: 18px;
+    }
+
+    .dashboard-card {
+        min-height: 112px;
+    }
+
+    .chart-card {
+        padding: 18px;
+    }
+
+    .chart-container {
+        height: 270px;
+    }
+}
+
+@media (max-width: 576px) {
+    .container-fluid {
+        padding-left: 14px;
+        padding-right: 14px;
+    }
+
+    .section-title {
+        font-size: 20px;
+        margin-top: 29px;
+    }
+
+    .chart-card {
+        padding: 15px;
+        border-radius: 11px;
+    }
+
+    .chart-card h4 {
+        font-size: 16px;
+    }
+
+    .chart-container {
+        height: 250px;
+    }
+
+    .dashboard-card {
+        min-height: 105px;
+    }
+
+    .table-responsive .table {
+        min-width: 540px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .dashboard-card,
+    .chart-card {
+        transition: none;
+    }
+}
