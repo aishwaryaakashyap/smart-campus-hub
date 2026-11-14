@@ -3740,7 +3740,13 @@ async function loadGrievanceDetails(grievanceId, content) {
             ["Submitted", data.created_at
                 ? new Date(data.created_at).toLocaleString("en-IN") : null],
             ["Last Updated", data.updated_at
-                ? new Date(data.updated_at).toLocaleString("en-IN") : null]
+                ? new Date(data.updated_at).toLocaleString("en-IN") : null],
+            ["SLA Due", data.sla_due_at
+                ? new Date(data.sla_due_at).toLocaleString("en-IN") : null],
+            ["Resolution Confirmed", data.resolution_confirmed_at
+                ? new Date(data.resolution_confirmed_at).toLocaleString("en-IN")
+                : null],
+            ["Times Reopened", data.reopen_count ?? 0]
         ];
 
         details.forEach(([label, value]) => {
@@ -3751,6 +3757,113 @@ async function loadGrievanceDetails(grievanceId, content) {
             item.textContent = label + ": " + value;
             panel.appendChild(item);
         });
+
+        const showActionNotice = (message, isError = false) => {
+            const notice = document.createElement("p");
+            notice.className = isError ? "error" : "grievance-action-message";
+            notice.textContent = message;
+
+            const pageHeading = content.querySelector("h2");
+            if (pageHeading) {
+                pageHeading.insertAdjacentElement("afterend", notice);
+            } else {
+                content.prepend(notice);
+            }
+        };
+
+        const performGrievanceAction = async (
+            endpoint,
+            payload,
+            button,
+            originalLabel
+        ) => {
+            button.disabled = true;
+            button.textContent = "Please wait...";
+
+            try {
+                const options = {
+                    method: "PUT",
+                    credentials: "same-origin",
+                    headers: {
+                        "X-CSRFToken": csrfToken
+                    }
+                };
+
+                if (payload !== null) {
+                    options.headers["Content-Type"] = "application/json";
+                    options.body = JSON.stringify(payload);
+                }
+
+                const response = await fetch(endpoint, options);
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(
+                        result.error || "Unable to update this grievance."
+                    );
+                }
+
+                await loadGrievanceDetails(grievanceId, content);
+
+                showActionNotice(
+                    result.message || "Grievance updated successfully."
+                );
+
+            } catch (error) {
+                button.disabled = false;
+                button.textContent = originalLabel;
+                showActionNotice(error.message, true);
+            }
+        };
+
+        if (data.status === "Resolved") {
+            const actions = document.createElement("div");
+            actions.className = "grievance-actions";
+
+            if (!data.resolution_confirmed_at) {
+                const confirmButton = document.createElement("button");
+                confirmButton.type = "button";
+                confirmButton.textContent = "Confirm Resolution";
+
+                confirmButton.addEventListener("click", () => {
+                    performGrievanceAction(
+                        "/api/grievances/" +
+                            encodeURIComponent(grievanceId) +
+                            "/confirm-resolution",
+                        null,
+                        confirmButton,
+                        "Confirm Resolution"
+                    );
+                });
+
+                actions.appendChild(confirmButton);
+            }
+
+            const reopenButton = document.createElement("button");
+            reopenButton.type = "button";
+            reopenButton.textContent = "Request Reopening";
+
+            reopenButton.addEventListener("click", () => {
+                const comment = window.prompt(
+                    "Why does this grievance need to be reopened? (Optional)",
+                    ""
+                );
+
+                if (comment === null) return;
+
+                performGrievanceAction(
+                    "/api/grievances/" +
+                        encodeURIComponent(grievanceId) +
+                        "/reopen",
+                    { comment: comment },
+                    reopenButton,
+                    "Request Reopening"
+                );
+            });
+
+            actions.appendChild(reopenButton);
+            panel.appendChild(actions);
+        }
 
         loading.remove();
         content.appendChild(panel);

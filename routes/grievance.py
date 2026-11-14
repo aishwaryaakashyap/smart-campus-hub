@@ -1,5 +1,6 @@
 
 from flask import Blueprint, request, jsonify, session
+from datetime import datetime, timezone
 
 from extensions import db
 from models import (
@@ -10,6 +11,7 @@ from models import (
     User,
 )
 from services.notifications import create_notification
+from services.grievance_sla import calculate_sla_due_at
 
 
 grievance_bp = Blueprint('grievance', __name__)
@@ -36,6 +38,30 @@ def require_student():
         )
 
     return student, None
+
+
+def notify_grievance_staff(grievance, title, message):
+    """Notify coordinators and the assigned advisor without duplicates."""
+    recipients = {}
+
+    coordinators = User.query.filter_by(role='coordinator').all()
+
+    for coordinator in coordinators:
+        recipients[coordinator.id] = coordinator
+
+    if grievance.assigned_to:
+        advisor = db.session.get(User, grievance.assigned_to)
+
+        if advisor and advisor.role == 'advisor':
+            recipients[advisor.id] = advisor
+
+    for recipient in recipients.values():
+        create_notification(
+            user_id=recipient.id,
+            title=title,
+            message=message,
+            notification_type='grievance'
+        )
 
 
 @grievance_bp.route('/categories', methods=['GET'])
@@ -114,6 +140,13 @@ def submit_grievance():
             'error': 'Priority must be Low, Medium, or High'
         }), 400
 
+    try:
+        sla_due_at = calculate_sla_due_at(priority)
+    except ValueError:
+        return jsonify({
+            'error': 'Grievance SLA configuration is invalid'
+        }), 500
+
     location = data.get('location')
 
     if location is not None and not isinstance(location, str):
@@ -126,7 +159,8 @@ def submit_grievance():
         description=description.strip(),
         location=location.strip() if location and location.strip() else None,
         priority=priority,
-        status='Submitted'
+        status='Submitted',
+        sla_due_at=sla_due_at
     )
 
     try:
@@ -213,7 +247,173 @@ def get_grievance(grievance_id):
         'status': grievance.status,
         'created_at': grievance.created_at.isoformat(),
         'updated_at': grievance.updated_at.isoformat()
-        if grievance.updated_at else None
+        if grievance.updated_at else None,
+        'sla_due_at': grievance.sla_due_at.isoformat()
+        if grievance.sla_due_at else None,
+        'resolution_confirmed_at':
+            grievance.resolution_confirmed_at.isoformat()
+            if grievance.resolution_confirmed_at else None,
+        'reopen_count': grievance.reopen_count or 0
+    }), 200
+
+
+@grievance_bp.route('/<int:grievance_id>/confirm-resolution', methods=['PUT'])
+def confirm_grievance_resolution(grievance_id):
+    student, error = require_student()
+    if error:
+        return error
+
+    grievance = db.session.get(Grievance, grievance_id)
+
+    if not grievance or grievance.student_id != student.id:
+        return jsonify({'error': 'Grievance not found'}), 404
+
+    if grievance.status != 'Resolved':
+        return jsonify({
+            'error': 'Only resolved grievances can be confirmed'
+        }), 409
+
+    if grievance.resolution_confirmed_at:
+        return jsonify({
+            'message': 'Resolution has already been confirmed',
+            'resolution_confirmed_at':
+                grievance.resolution_confirmed_at.isoformat()
+        }), 200
+
+    confirmed_at = datetime.now(timezone.utc).replace(tzinfo=None)
+
+    history = GrievanceUpdate(
+        grievance_id=grievance.id,
+        updated_by=session['user_id'],
+        old_status='Resolved',
+        new_status='Resolved',
+        comment='Student confirmed that the grievance is resolved.'
+    )
+
+    try:
+        grievance.resolution_confirmed_at = confirmed_at
+        db.session.add(history)
+
+        notify_grievance_staff(
+            grievance,
+            'Grievance Resolution Confirmed',
+            (
+                f'The student confirmed that grievance '
+                f'"{grievance.title}" is resolved.'
+            )
+        )
+
+        db.session.commit()
+
+    except Exception:
+        db.session.rollback()
+        return jsonify({
+            'error': 'Unable to confirm grievance resolution'
+        }), 500
+
+    return jsonify({
+        'message': 'Grievance resolution confirmed successfully',
+        'grievance_id': grievance.id,
+        'resolution_confirmed_at': confirmed_at.isoformat()
+    }), 200
+
+
+@grievance_bp.route('/<int:grievance_id>/reopen', methods=['PUT'])
+def reopen_grievance(grievance_id):
+    student, error = require_student()
+    if error:
+        return error
+
+    grievance = db.session.get(Grievance, grievance_id)
+
+    if not grievance or grievance.student_id != student.id:
+        return jsonify({'error': 'Grievance not found'}), 404
+
+    if grievance.status != 'Resolved':
+        return jsonify({
+            'error': 'Only resolved grievances can be reopened'
+        }), 409
+
+    data = request.get_json(silent=True)
+
+    if data is None:
+        data = {}
+
+    if not isinstance(data, dict):
+        return jsonify({
+            'error': 'Request body must be a JSON object'
+        }), 400
+
+    comment = data.get('comment')
+
+    if comment is not None and not isinstance(comment, str):
+        return jsonify({'error': 'Comment must be text'}), 400
+
+    if isinstance(comment, str) and len(comment.strip()) > 1000:
+        return jsonify({
+            'error': 'Comment must be 1000 characters or fewer'
+        }), 400
+
+    try:
+        new_sla_due_at = calculate_sla_due_at(grievance.priority)
+    except ValueError:
+        return jsonify({
+            'error': 'Grievance SLA configuration is invalid'
+        }), 500
+
+    old_status = grievance.status
+    history = GrievanceUpdate(
+        grievance_id=grievance.id,
+        updated_by=session['user_id'],
+        old_status=old_status,
+        new_status='In Progress',
+        comment=(
+            comment.strip()
+            if isinstance(comment, str) and comment.strip()
+            else 'Student requested that the grievance be reopened.'
+        )
+    )
+
+    try:
+        grievance.status = 'In Progress'
+        grievance.resolution_confirmed_at = None
+        grievance.reopen_count = (grievance.reopen_count or 0) + 1
+        grievance.sla_due_at = new_sla_due_at
+
+        # Return handling to the previously assigned advisor, if present.
+        if grievance.assigned_to:
+            grievance.current_handler_id = grievance.assigned_to
+            grievance.current_handler_role = 'advisor'
+        else:
+            grievance.current_handler_id = None
+            grievance.current_handler_role = None
+
+        db.session.add(history)
+
+        notify_grievance_staff(
+            grievance,
+            'Grievance Reopened',
+            (
+                f'The student reopened grievance "{grievance.title}". '
+                f'Please review the issue.'
+            )
+        )
+
+        db.session.commit()
+
+    except Exception:
+        db.session.rollback()
+        return jsonify({
+            'error': 'Unable to reopen grievance at this time'
+        }), 500
+
+    return jsonify({
+        'message': 'Grievance reopened successfully',
+        'grievance_id': grievance.id,
+        'old_status': old_status,
+        'status': grievance.status,
+        'reopen_count': grievance.reopen_count,
+        'sla_due_at': grievance.sla_due_at.isoformat()
     }), 200
 
 
@@ -308,7 +508,11 @@ def assign_grievance(grievance_id):
         }), 400
 
     try:
+        # Preserve the existing advisor assignment while synchronizing
+        # the Phase 16 current-handler fields.
         grievance.assigned_to = advisor.id
+        grievance.current_handler_id = advisor.id
+        grievance.current_handler_role = advisor.role
 
         create_notification(
             user_id=advisor.id,
@@ -405,6 +609,15 @@ def update_grievance_status(grievance_id):
 
     try:
         grievance.status = new_status
+        grievance.resolution_confirmed_at = None
+
+        if new_status in ('Resolved', 'Rejected'):
+            grievance.current_handler_id = None
+            grievance.current_handler_role = None
+        else:
+            grievance.current_handler_id = user_id
+            grievance.current_handler_role = role
+
         db.session.add(history)
 
         if new_status == 'Resolved':
