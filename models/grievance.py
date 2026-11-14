@@ -45,7 +45,7 @@ class Grievance(db.Model):
     sla_due_at = db.Column(db.DateTime, nullable=True)
 
     escalation_level = db.Column(
-        TINYINT(unsigned=True),
+        db.SmallInteger().with_variant(TINYINT(unsigned=True), "mysql"),
         nullable=False,
         default=0,
         server_default=db.text("0")
@@ -55,7 +55,7 @@ class Grievance(db.Model):
     resolution_confirmed_at = db.Column(db.DateTime, nullable=True)
 
     reopen_count = db.Column(
-        INTEGER(unsigned=True),
+        db.Integer().with_variant(INTEGER(unsigned=True), "mysql"),
         nullable=False,
         default=0,
         server_default=db.text("0")
@@ -169,7 +169,7 @@ class GrievanceEscalation(db.Model):
     to_role = db.Column(db.String(30), nullable=False)
 
     escalation_level = db.Column(
-        TINYINT(unsigned=True),
+        db.SmallInteger().with_variant(TINYINT(unsigned=True), "mysql"),
         nullable=False
     )
     reason = db.Column(db.String(500), nullable=False)

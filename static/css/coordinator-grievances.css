@@ -1,0 +1,158 @@
+
+/* Smart Campus Hub - Coordinator Grievance Dashboard */
+
+body {
+    background: var(--sch-page);
+    color: var(--sch-text);
+}
+
+header {
+    background: linear-gradient(120deg, var(--sch-brand-dark), var(--sch-brand));
+    color: white;
+    border: 0;
+    box-shadow: 0 3px 14px rgba(65, 25, 42, 0.12);
+}
+
+header h1 { color: white; }
+header p { color: #f3dfe6; }
+
+main {
+    width: min(94%, 1400px);
+    margin: 28px auto;
+}
+
+.intro {
+    padding: 24px 27px;
+    background: linear-gradient(115deg, white, #fbf1f4);
+    border: 1px solid var(--sch-border);
+    border-left: 5px solid var(--sch-brand);
+    border-radius: var(--sch-radius-lg);
+    box-shadow: var(--sch-card-shadow);
+}
+
+.intro h2 { color: var(--sch-brand-dark); }
+.intro p { color: var(--sch-muted); }
+
+.stats {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.stat {
+    min-height: 120px;
+    background: white;
+    border: 1px solid var(--sch-border);
+    border-top: 4px solid var(--sch-brand);
+    border-radius: var(--sch-radius-md);
+    box-shadow: var(--sch-card-shadow);
+}
+
+.stat-label { color: var(--sch-muted); font-weight: 600; }
+.stat-value { color: var(--sch-brand); }
+
+.panel {
+    background: white;
+    border: 1px solid var(--sch-border);
+    border-radius: var(--sch-radius-lg);
+    box-shadow: var(--sch-card-shadow);
+}
+
+.panel h3 { color: var(--sch-brand-dark); }
+
+.filters {
+    grid-template-columns: minmax(200px, 2fr) minmax(130px, 1fr)
+                         minmax(130px, 1fr) auto;
+    gap: 13px;
+}
+
+label { color: var(--sch-text); }
+
+input, select, textarea {
+    border-color: var(--sch-border);
+    border-radius: var(--sch-radius-sm);
+}
+
+input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: var(--sch-focus);
+    box-shadow: 0 0 0 3px rgba(182, 91, 123, 0.12);
+}
+
+button, .button-link {
+    border-radius: var(--sch-radius-sm);
+    font-weight: 600;
+}
+
+.primary { background: var(--sch-brand); color: white; }
+.primary:hover { background: var(--sch-brand-dark); }
+.secondary { background: var(--sch-brand-soft); color: var(--sch-brand); }
+.neutral { background: #f1e9ed; color: var(--sch-brand-dark); }
+
+.table-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--sch-border);
+    border-radius: var(--sch-radius-md);
+    -webkit-overflow-scrolling: touch;
+}
+
+table { background: white; }
+
+th {
+    background: #fbf5f7;
+    color: var(--sch-brand-dark);
+    white-space: nowrap;
+}
+
+th, td { border-bottom-color: var(--sch-border); }
+tbody tr:last-child td { border-bottom: 0; }
+tbody tr:hover { background: #fdf9fa; }
+
+.title-cell { color: var(--sch-text); }
+.description, .small { color: var(--sch-muted); }
+
+.history-item {
+    background: #fdf9fa;
+    border-color: var(--sch-border);
+    border-radius: var(--sch-radius-md);
+}
+
+.message.error {
+    background: #fff0f0;
+    border: 1px solid #f2cccc;
+    color: #a52a38;
+}
+
+.message.success {
+    background: #eaf6ef;
+    border: 1px solid #cce9d7;
+    color: #176b48;
+}
+
+dialog {
+    border: 1px solid var(--sch-border);
+    border-radius: var(--sch-radius-lg);
+    box-shadow: 0 18px 55px rgba(40, 15, 28, 0.22);
+}
+
+dialog::backdrop { background: rgba(55, 20, 35, 0.58); }
+.dialog-header { border-bottom: 1px solid var(--sch-border); }
+.dialog-header h3 { color: var(--sch-brand-dark); }
+
+@media (max-width: 900px) {
+    .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 560px) {
+    header { padding: 17px 4%; }
+    .header-actions { width: 100%; }
+    .header-actions > * { flex: 1 1 140px; }
+    main { width: 94%; margin: 20px auto; }
+    .intro { padding: 19px; }
+    .stats, .filters { grid-template-columns: 1fr; }
+    .panel { padding: 17px; }
+    .filters button { width: 100%; }
+    .table-wrap { max-width: 100%; }
+    table { min-width: 1100px; }
+    dialog { width: 94%; max-height: 88vh; padding: 17px; }
+}

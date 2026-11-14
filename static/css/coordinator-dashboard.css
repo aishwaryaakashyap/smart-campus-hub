@@ -1,0 +1,233 @@
+/* Smart Campus Hub - Coordinator Dashboard Refinements */
+
+body {
+    background: var(--sch-page);
+    color: var(--sch-text);
+}
+
+header {
+    background: linear-gradient(120deg, var(--sch-brand-dark), var(--sch-brand));
+    padding: 22px max(4%, calc((100% - 1250px) / 2));
+    box-shadow: 0 3px 14px rgba(65, 25, 42, 0.12);
+}
+
+header h2 {
+    letter-spacing: 0.2px;
+}
+
+.container {
+    width: min(92%, 1250px);
+    margin: 32px auto;
+}
+
+.welcome {
+    padding: 25px 28px;
+    margin-bottom: 28px;
+    background: linear-gradient(115deg, #ffffff, #fbf1f4);
+    border: 1px solid var(--sch-border);
+    border-left: 5px solid var(--sch-brand);
+    border-radius: var(--sch-radius-lg);
+    box-shadow: var(--sch-card-shadow);
+}
+
+.welcome h1 {
+    color: var(--sch-brand-dark);
+    line-height: 1.3;
+}
+
+.welcome p {
+    line-height: 1.6;
+}
+
+.section-heading {
+    color: var(--sch-text);
+    font-size: 20px;
+    margin: 30px 0 17px;
+}
+
+.stats-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 18px;
+}
+
+.stat-card {
+    min-height: 132px;
+    padding: 22px;
+    background: var(--sch-surface);
+    border: 1px solid var(--sch-border);
+    border-left: 4px solid var(--sch-brand);
+    border-radius: var(--sch-radius-md);
+    box-shadow: var(--sch-card-shadow);
+}
+
+.stat-card p {
+    color: var(--sch-muted);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.2px;
+    line-height: 1.45;
+}
+
+.stat-card h2 {
+    color: var(--sch-brand);
+    font-size: 30px;
+    line-height: 1.2;
+    overflow-wrap: anywhere;
+}
+
+.management-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 18px;
+}
+
+.management-card {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    min-height: 190px;
+    padding: 23px;
+    border: 1px solid var(--sch-border);
+    border-top: 4px solid var(--sch-brand);
+    border-radius: var(--sch-radius-lg);
+    box-shadow: var(--sch-card-shadow);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.management-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 9px 24px rgba(65, 25, 42, 0.10);
+}
+
+.management-card h3 {
+    color: var(--sch-brand);
+    line-height: 1.4;
+}
+
+.management-card p {
+    color: var(--sch-muted);
+    line-height: 1.6;
+}
+
+.management-card a {
+    margin-top: auto;
+    border-radius: var(--sch-radius-sm);
+    font-weight: 600;
+    transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.management-card a:hover {
+    transform: translateY(-1px);
+}
+
+.company-section {
+    margin-top: 26px;
+    padding: 25px;
+    background: var(--sch-surface);
+    border: 1px solid var(--sch-border);
+    border-radius: var(--sch-radius-lg);
+    box-shadow: var(--sch-card-shadow);
+    scroll-margin-top: 20px;
+}
+
+.company-section h2 {
+    color: var(--sch-brand-dark);
+}
+
+.company-form input,
+.company-form textarea {
+    border-color: var(--sch-border);
+    border-radius: var(--sch-radius-sm);
+}
+
+.company-form input:focus,
+.company-form textarea:focus {
+    border-color: var(--sch-focus);
+}
+
+.company-form button,
+.company-action {
+    border-radius: var(--sch-radius-sm);
+    font-weight: 600;
+}
+
+.company-list {
+    gap: 16px;
+}
+
+.company-item {
+    background: #fff;
+    border-color: var(--sch-border);
+    border-left-color: var(--sch-brand);
+    border-radius: var(--sch-radius-md);
+    transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.company-item:hover {
+    border-color: #d7b2c0;
+    box-shadow: var(--sch-card-shadow);
+}
+
+@media (max-width: 900px) {
+    .stats-grid,
+    .management-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .container {
+        width: 92%;
+    }
+}
+
+@media (max-width: 600px) {
+    header {
+        padding: 18px 4%;
+    }
+
+    header h2 {
+        font-size: 20px;
+    }
+
+    .container {
+        width: 92%;
+        margin: 22px auto;
+    }
+
+    .welcome {
+        padding: 20px;
+    }
+
+    .welcome h1 {
+        font-size: 23px;
+    }
+
+    .stats-grid,
+    .management-grid {
+        grid-template-columns: 1fr;
+        gap: 14px;
+    }
+
+    .stat-card {
+        min-height: 110px;
+        padding: 19px;
+    }
+
+    .management-card {
+        min-height: 165px;
+        padding: 20px;
+    }
+
+    .company-section {
+        padding: 18px;
+        margin-top: 20px;
+    }
+
+    .company-form {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (hover: none) {
+    .management-card:hover {
+        transform: none;
+    }
+}

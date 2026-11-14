@@ -1,0 +1,172 @@
+/* Smart Campus Hub - Login Page Refinements */
+
+body {
+    background:
+        radial-gradient(circle at 12% 15%, #f4e7ec 0, transparent 32%),
+        radial-gradient(circle at 90% 85%, #f1e6eb 0, transparent 30%),
+        #f7f5f6;
+    font-family: "Segoe UI", Arial, sans-serif;
+}
+
+.login-wrapper {
+    border: 1px solid #eadfe3;
+    box-shadow: 0 18px 55px rgba(65, 25, 42, 0.13);
+}
+
+.brand-panel {
+    background: linear-gradient(145deg, #762642, #421024);
+}
+
+.brand-icon {
+    border-color: rgba(255, 255, 255, 0.55);
+    background: rgba(255, 255, 255, 0.08);
+    font-weight: 700;
+}
+
+.brand-panel h1 {
+    letter-spacing: -0.5px;
+}
+
+.brand-panel p {
+    line-height: 1.75;
+}
+
+.form-panel h2 {
+    color: #57182e;
+    letter-spacing: -0.4px;
+}
+
+.subtitle {
+    color: #766b70;
+}
+
+label {
+    color: #493b42;
+}
+
+input {
+    min-height: 48px;
+    border-color: #eadfe3;
+    border-radius: 9px;
+    color: #30252a;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease,
+                background 0.2s ease;
+}
+
+input:hover {
+    border-color: #c9aab6;
+}
+
+input:focus {
+    border-color: #762642;
+    background: #fffdfd;
+    box-shadow: 0 0 0 4px rgba(118, 38, 66, 0.11);
+}
+
+.login-button {
+    min-height: 49px;
+    border-radius: 9px;
+    background: linear-gradient(110deg, #762642, #642039);
+    box-shadow: 0 5px 12px rgba(87, 24, 46, 0.14);
+    transition: transform 0.2s ease, box-shadow 0.2s ease,
+                background 0.2s ease;
+}
+
+.login-button:hover:not(:disabled) {
+    background: #57182e;
+    transform: translateY(-1px);
+    box-shadow: 0 8px 16px rgba(87, 24, 46, 0.18);
+}
+
+.login-button:disabled {
+    transform: none;
+    box-shadow: none;
+}
+
+.login-button:focus-visible,
+input:focus-visible {
+    outline: 3px solid #c98da3;
+    outline-offset: 3px;
+}
+
+#message {
+    overflow-wrap: anywhere;
+}
+
+#message.error {
+    color: #a52a38;
+}
+
+#message.success {
+    color: #176b48;
+}
+
+.form-note {
+    color: #766b70;
+}
+
+@media (max-width: 700px) {
+    body {
+        align-items: flex-start;
+        padding: 18px;
+    }
+
+    .login-wrapper {
+        min-height: 0;
+        margin: auto 0;
+        border-radius: 14px;
+    }
+
+    .brand-panel {
+        padding: 30px 28px;
+    }
+
+    .brand-panel h1 {
+        font-size: 26px;
+    }
+
+    .brand-panel p {
+        font-size: 14px;
+    }
+
+    .form-panel {
+        padding: 34px 28px;
+    }
+
+    .form-panel h2 {
+        font-size: 26px;
+    }
+
+    .subtitle {
+        margin-bottom: 26px;
+    }
+
+    .form-group {
+        margin-bottom: 19px;
+    }
+}
+
+@media (max-width: 380px) {
+    body {
+        padding: 12px;
+    }
+
+    .brand-panel,
+    .form-panel {
+        padding-left: 20px;
+        padding-right: 20px;
+    }
+
+    .brand-panel h1 {
+        font-size: 24px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
+    }
+}
