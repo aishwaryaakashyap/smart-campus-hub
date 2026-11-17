@@ -17,3 +17,4 @@ from .resume import Resume
 from .grievance_category import GrievanceCategory
 from .grievance import Grievance, GrievanceUpdate, GrievanceEscalation
 from .notification import Notification
+from .password_reset_token import PasswordResetToken

@@ -3,6 +3,7 @@ from copy import deepcopy
 from types import SimpleNamespace
 from unittest.mock import patch
 
+from flask import session
 from app import app
 
 
@@ -27,6 +28,15 @@ class InterviewSubmissionTests(unittest.TestCase):
         self.addCleanup(self.app_context.pop)
 
         self.client = app.test_client()
+
+        self.current_user_patcher = patch(
+            "routes.interview.get_session_user",
+            side_effect=lambda user_id: SimpleNamespace(
+                role=session.get("role")
+            )
+        )
+        self.current_user_patcher.start()
+        self.addCleanup(self.current_user_patcher.stop)
 
     def set_session(self, user_id=10, role="student"):
         with self.client.session_transaction() as session:

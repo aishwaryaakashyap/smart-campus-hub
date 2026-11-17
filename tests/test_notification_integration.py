@@ -1,6 +1,7 @@
 import unittest
 from unittest.mock import MagicMock, patch
 
+from flask import session
 from app import app
 
 
@@ -15,6 +16,24 @@ class NotificationIntegrationTests(unittest.TestCase):
         self.addCleanup(self.app_context.pop)
 
         self.client = app.test_client()
+
+        self.current_user_patcher = patch(
+            "routes.grievance.get_session_user",
+            side_effect=lambda user_id: type(
+                "SessionUser", (), {"role": session.get("role")}
+            )()
+        )
+        self.current_user_patcher.start()
+        self.addCleanup(self.current_user_patcher.stop)
+
+        self.application_user_patcher = patch(
+            "routes.application.get_session_user",
+            side_effect=lambda user_id: type(
+                "SessionUser", (), {"role": session.get("role")}
+            )()
+        )
+        self.application_user_patcher.start()
+        self.addCleanup(self.application_user_patcher.stop)
 
     def set_session(self, user_id, role):
         with self.client.session_transaction() as session:
@@ -136,6 +155,24 @@ class GrievanceNotificationIntegrationTests(unittest.TestCase):
         self.app_context.push()
         self.addCleanup(self.app_context.pop)
         self.client = app.test_client()
+
+        self.current_user_patcher = patch(
+            "routes.grievance.get_session_user",
+            side_effect=lambda user_id: type(
+                "SessionUser", (), {"role": session.get("role")}
+            )()
+        )
+        self.current_user_patcher.start()
+        self.addCleanup(self.current_user_patcher.stop)
+
+        self.application_user_patcher = patch(
+            "routes.application.get_session_user",
+            side_effect=lambda user_id: type(
+                "SessionUser", (), {"role": session.get("role")}
+            )()
+        )
+        self.application_user_patcher.start()
+        self.addCleanup(self.application_user_patcher.stop)
 
     def set_session(self, user_id, role):
         with self.client.session_transaction() as session:

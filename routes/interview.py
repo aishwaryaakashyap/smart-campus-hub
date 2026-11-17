@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify, session
 from extensions import db
-from models import (Student, Company, InterviewExperience, InterviewRound,
+from models import (Student, User, Company, InterviewExperience, InterviewRound,
                     InterviewQuestion, StudentAnswer, InterviewSkill,
                     PreparationResource)
 
@@ -13,14 +13,42 @@ VALID_ROUND_TYPES = ['Aptitude', 'Coding', 'Technical', 'HR',
 VALID_ANSWER_STATUS = ['Correct', 'Partially Correct', 'Incorrect', 'Not Evaluated']
 
 
+def get_session_user(user_id):
+    """Load the current account record for session validation."""
+    return db.session.get(User, user_id)
+
+
 def require_student():
-    if 'user_id' not in session:
+    """Verify that the current account still has the student role."""
+    user_id = session.get('user_id')
+
+    if not user_id:
         return None, (jsonify({'error': 'Not logged in'}), 401)
-    if session.get('role') != 'student':
-        return None, (jsonify({'error': 'Only students can perform this action'}), 403)
-    student = Student.query.filter_by(user_id=session['user_id']).first()
+
+    session_role = session.get('role')
+    user = get_session_user(user_id)
+
+    # Invalidate sessions for deleted accounts or changed roles.
+    if not user or user.role != session_role:
+        session.clear()
+        return None, (jsonify({'error': 'Not logged in'}), 401)
+
+    if session_role != 'student':
+        return None, (
+            jsonify({'error': 'Only students can perform this action'}),
+            403
+        )
+
+    student = Student.query.filter_by(user_id=user_id).first()
+
     if not student:
-        return None, (jsonify({'error': 'Student profile not found. Create your profile first.'}), 404)
+        return None, (
+            jsonify({
+                'error': 'Student profile not found. Create your profile first.'
+            }),
+            404
+        )
+
     return student, None
 
 

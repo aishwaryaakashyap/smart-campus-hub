@@ -1,18 +1,37 @@
 from flask import Blueprint, request, jsonify, session
 from extensions import db
-from models import Student
+from models import Student, User
 
 student_bp = Blueprint('student', __name__)
 
 
+def get_session_user(user_id):
+    """Load the current account record for session validation."""
+    return db.session.get(User, user_id)
+
+
 def require_login_student():
-    if 'user_id' not in session:
+    """Verify that the current account still has the student role."""
+    user_id = session.get('user_id')
+
+    if not user_id:
         return None, (
             jsonify({'error': 'Not logged in'}),
             401
         )
 
-    if session.get('role') != 'student':
+    session_role = session.get('role')
+    user = get_session_user(user_id)
+
+    # Invalidate sessions for deleted accounts or changed roles.
+    if not user or user.role != session_role:
+        session.clear()
+        return None, (
+            jsonify({'error': 'Not logged in'}),
+            401
+        )
+
+    if session_role != 'student':
         return None, (
             jsonify({
                 'error': 'Only students can perform this action'
@@ -20,7 +39,7 @@ def require_login_student():
             403
         )
 
-    return session['user_id'], None
+    return user_id, None
 
 
 @student_bp.route('/profile', methods=['POST'])

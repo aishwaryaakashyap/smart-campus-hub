@@ -2,6 +2,7 @@ import unittest
 from types import SimpleNamespace
 from unittest.mock import patch
 
+from flask import session
 from app import app
 
 
@@ -17,6 +18,15 @@ class InterviewRouteAccessTests(unittest.TestCase):
         self.app_context = app.app_context()
         self.app_context.push()
         self.client = app.test_client()
+
+        self.current_user_patcher = patch(
+            "routes.interview.get_session_user",
+            side_effect=lambda user_id: SimpleNamespace(
+                role=session.get("role")
+            )
+        )
+        self.current_user_patcher.start()
+        self.addCleanup(self.current_user_patcher.stop)
 
     def tearDown(self):
         self.app_context.pop()
@@ -131,6 +141,31 @@ class InterviewRouteAccessTests(unittest.TestCase):
             )
 
             experience_query.get.assert_not_called()
+
+    def test_stale_student_session_is_cleared_after_role_change(self):
+        self.set_session(user_id=30, role="student")
+
+        changed_user = SimpleNamespace(role="coordinator")
+
+        with patch(
+            "routes.interview.get_session_user",
+            return_value=changed_user
+        ), patch(
+            "routes.interview.Student.query"
+        ) as student_query:
+
+            response = self.client.get("/api/interviews/company/1")
+
+        self.assertEqual(response.status_code, 401)
+        self.assertEqual(
+            response.get_json()["error"],
+            "Not logged in"
+        )
+        student_query.filter_by.assert_not_called()
+
+        with self.client.session_transaction() as current_session:
+            self.assertNotIn("user_id", current_session)
+            self.assertNotIn("role", current_session)
 
     def test_student_without_profile_cannot_view_company_experiences(self):
         self.set_session(role="student")

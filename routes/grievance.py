@@ -17,17 +17,43 @@ from services.grievance_sla import calculate_sla_due_at
 grievance_bp = Blueprint('grievance', __name__)
 
 
-def require_student():
+def get_session_user(user_id):
+    """Load the current account record for session validation."""
+    return db.session.get(User, user_id)
+
+
+def require_session_role(allowed_roles, forbidden_message):
+    """Validate both the signed session and the user's current DB role."""
     user_id = session.get('user_id')
 
     if not user_id:
-        return None, (jsonify({'error': 'Not logged in'}), 401)
+        return None, None, (jsonify({'error': 'Not logged in'}), 401)
 
-    if session.get('role') != 'student':
-        return None, (
-            jsonify({'error': 'Only students can perform this action'}),
+    session_role = session.get('role')
+    user = get_session_user(user_id)
+
+    # A missing account or changed role invalidates the old session.
+    if not user or user.role != session_role:
+        session.clear()
+        return None, None, (jsonify({'error': 'Not logged in'}), 401)
+
+    if session_role not in allowed_roles:
+        return None, None, (
+            jsonify({'error': forbidden_message}),
             403
         )
+
+    return user_id, session_role, None
+
+
+def require_student():
+    user_id, role, error = require_session_role(
+        ('student',),
+        'Only students can perform this action'
+    )
+
+    if error:
+        return None, error
 
     student = Student.query.filter_by(user_id=user_id).first()
 
@@ -419,16 +445,12 @@ def reopen_grievance(grievance_id):
 
 @grievance_bp.route('/manage', methods=['GET'])
 def manage_grievances():
-    user_id = session.get('user_id')
-    role = session.get('role')
-
-    if not user_id:
-        return jsonify({'error': 'Not logged in'}), 401
-
-    if role not in ('coordinator', 'advisor'):
-        return jsonify({
-            'error': 'Only coordinators and advisors can access this endpoint'
-        }), 403
+    user_id, role, error = require_session_role(
+        ('coordinator', 'advisor'),
+        'Only coordinators and advisors can access this endpoint'
+    )
+    if error:
+        return error
 
     query = Grievance.query
 
@@ -457,16 +479,12 @@ def manage_grievances():
 
 @grievance_bp.route('/<int:grievance_id>/assign', methods=['PUT'])
 def assign_grievance(grievance_id):
-    user_id = session.get('user_id')
-    role = session.get('role')
-
-    if not user_id:
-        return jsonify({'error': 'Not logged in'}), 401
-
-    if role != 'coordinator':
-        return jsonify({
-            'error': 'Only coordinators can assign grievances'
-        }), 403
+    user_id, role, error = require_session_role(
+        ('coordinator',),
+        'Only coordinators can assign grievances'
+    )
+    if error:
+        return error
 
     data = request.get_json(silent=True)
 
@@ -541,16 +559,12 @@ def assign_grievance(grievance_id):
 
 @grievance_bp.route('/<int:grievance_id>/status', methods=['PUT'])
 def update_grievance_status(grievance_id):
-    user_id = session.get('user_id')
-    role = session.get('role')
-
-    if not user_id:
-        return jsonify({'error': 'Not logged in'}), 401
-
-    if role not in ('coordinator', 'advisor'):
-        return jsonify({
-            'error': 'Only coordinators and advisors can update status'
-        }), 403
+    user_id, role, error = require_session_role(
+        ('coordinator', 'advisor'),
+        'Only coordinators and advisors can update status'
+    )
+    if error:
+        return error
 
     data = request.get_json(silent=True)
 
@@ -686,15 +700,12 @@ def get_grievance_history(grievance_id):
 @grievance_bp.route('/advisors', methods=['GET'])
 def get_grievance_advisors():
     """List advisors for coordinator assignment."""
-    user_id = session.get('user_id')
-
-    if not user_id:
-        return jsonify({'error': 'Not logged in'}), 401
-
-    if session.get('role') != 'coordinator':
-        return jsonify({
-            'error': 'Only coordinators can view available advisors'
-        }), 403
+    user_id, role, error = require_session_role(
+        ('coordinator',),
+        'Only coordinators can view available advisors'
+    )
+    if error:
+        return error
 
     advisors = User.query.filter_by(role='advisor').order_by(
         User.name.asc()
@@ -709,16 +720,12 @@ def get_grievance_advisors():
 @grievance_bp.route('/manage/<int:grievance_id>/history', methods=['GET'])
 def get_managed_grievance_history(grievance_id):
     """View history as a coordinator or the assigned advisor."""
-    user_id = session.get('user_id')
-    role = session.get('role')
-
-    if not user_id:
-        return jsonify({'error': 'Not logged in'}), 401
-
-    if role not in ('coordinator', 'advisor'):
-        return jsonify({
-            'error': 'Only coordinators and advisors can view this history'
-        }), 403
+    user_id, role, error = require_session_role(
+        ('coordinator', 'advisor'),
+        'Only coordinators and advisors can view this history'
+    )
+    if error:
+        return error
 
     grievance = db.session.get(Grievance, grievance_id)
 

@@ -1,5 +1,6 @@
 import unittest
 from unittest.mock import MagicMock, patch
+from flask import session
 
 from app import app
 
@@ -13,6 +14,15 @@ class CoordinatorGrievanceUITests(unittest.TestCase):
         self.app_context.push()
         self.addCleanup(self.app_context.pop)
         self.client = app.test_client()
+
+        current_user_patcher = patch(
+            "routes.grievance.get_session_user",
+            side_effect=lambda user_id: type(
+                "SessionUser", (), {"role": session.get("role")}
+            )()
+        )
+        current_user_patcher.start()
+        self.addCleanup(current_user_patcher.stop)
 
     def set_session(self, user_id=1, role="coordinator"):
         with self.client.session_transaction() as session:

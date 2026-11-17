@@ -2,6 +2,7 @@
 import unittest
 from unittest.mock import MagicMock, patch
 
+from flask import session
 from sqlalchemy.exc import SQLAlchemyError
 
 from app import app
@@ -19,6 +20,15 @@ class PlacementDriveRouteTests(unittest.TestCase):
 
         self.client = app.test_client()
 
+        self.current_user_patcher = patch(
+            "routes.placement_drive.get_session_user",
+            side_effect=lambda user_id: type(
+                "SessionUser", (), {"role": session.get("role")}
+            )()
+        )
+        self.current_user_patcher.start()
+        self.addCleanup(self.current_user_patcher.stop)
+
     def set_session(self, user_id=1, role="coordinator"):
         with self.client.session_transaction() as session:
             session["user_id"] = user_id
@@ -32,6 +42,28 @@ class PlacementDriveRouteTests(unittest.TestCase):
             json={"company_id": 1, "job_role": "Python Developer"}
         )
         self.assertEqual(response.status_code, 401)
+
+    def test_stale_coordinator_session_is_cleared_after_role_change(self):
+        self.set_session(user_id=99, role="coordinator")
+
+        current_user = MagicMock()
+        current_user.role = "student"
+
+        with patch(
+            "routes.placement_drive.get_session_user",
+            return_value=current_user
+        ):
+            response = self.client.post(
+                "/api/drives/",
+                json={"company_id": 1, "job_role": "Python Developer"}
+            )
+
+        self.assertEqual(response.status_code, 401)
+        self.assertEqual(response.get_json()["error"], "Not logged in")
+
+        with self.client.session_transaction() as current_session:
+            self.assertNotIn("user_id", current_session)
+            self.assertNotIn("role", current_session)
 
     def test_rejects_student_creating_drive(self):
         self.set_session(role="student")

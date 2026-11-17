@@ -2,7 +2,9 @@
 import unittest
 from unittest.mock import patch, MagicMock
 from datetime import datetime
+from types import SimpleNamespace
 
+from flask import session
 from sqlalchemy.exc import IntegrityError
 
 from app import app
@@ -20,9 +22,18 @@ class ApplicationValidationTests(unittest.TestCase):
 
         self.client = app.test_client()
 
-        with self.client.session_transaction() as session:
-            session['user_id'] = 101
-            session['role'] = 'student'
+        self.current_user_patcher = patch(
+            'routes.application.get_session_user',
+            side_effect=lambda user_id: SimpleNamespace(
+                role=session.get('role')
+            )
+        )
+        self.current_user_patcher.start()
+        self.addCleanup(self.current_user_patcher.stop)
+
+        with self.client.session_transaction() as client_session:
+            client_session['user_id'] = 101
+            client_session['role'] = 'student'
 
         self.student_lookup = patch(
             'routes.application.Student.query'
@@ -34,6 +45,26 @@ class ApplicationValidationTests(unittest.TestCase):
         )
 
         self.addCleanup(self.student_lookup.stop)
+
+    def test_stale_student_session_is_cleared_after_role_change(self):
+        changed_user = SimpleNamespace(role='coordinator')
+
+        with patch(
+            'routes.application.get_session_user',
+            return_value=changed_user
+        ):
+            response = self.client.post(
+                '/api/applications/',
+                json={'drive_id': 1}
+            )
+
+        self.assertEqual(response.status_code, 401)
+        self.assertEqual(response.get_json()['error'], 'Not logged in')
+        self.mock_student_query.filter_by.assert_not_called()
+
+        with self.client.session_transaction() as current_session:
+            self.assertNotIn('user_id', current_session)
+            self.assertNotIn('role', current_session)
 
     def test_rejects_request_without_json_content_type(self):
         response = self.client.post(
@@ -181,9 +212,18 @@ class ApplicationStatusValidationTests(unittest.TestCase):
 
         self.client = app.test_client()
 
-        with self.client.session_transaction() as session:
-            session['user_id'] = 202
-            session['role'] = 'coordinator'
+        self.current_user_patcher = patch(
+            'routes.application.get_session_user',
+            side_effect=lambda user_id: SimpleNamespace(
+                role=session.get('role')
+            )
+        )
+        self.current_user_patcher.start()
+        self.addCleanup(self.current_user_patcher.stop)
+
+        with self.client.session_transaction() as client_session:
+            client_session['user_id'] = 202
+            client_session['role'] = 'coordinator'
 
     def test_rejects_invalid_status(self):
         mock_application = MagicMock()
@@ -257,6 +297,15 @@ class CoordinatorApplicationListTests(unittest.TestCase):
 
         self.client = app.test_client()
 
+        self.current_user_patcher = patch(
+            'routes.application.get_session_user',
+            side_effect=lambda user_id: SimpleNamespace(
+                role=session.get('role')
+            )
+        )
+        self.current_user_patcher.start()
+        self.addCleanup(self.current_user_patcher.stop)
+
     def test_rejects_unauthenticated_request(self):
         response = self.client.get(
             '/api/applications/manage'
@@ -274,6 +323,26 @@ class CoordinatorApplicationListTests(unittest.TestCase):
         )
 
         self.assertEqual(response.status_code, 403)
+
+    def test_stale_coordinator_session_is_cleared_after_role_change(self):
+        with self.client.session_transaction() as client_session:
+            client_session['user_id'] = 202
+            client_session['role'] = 'coordinator'
+
+        changed_user = SimpleNamespace(role='student')
+
+        with patch(
+            'routes.application.get_session_user',
+            return_value=changed_user
+        ):
+            response = self.client.get('/api/applications/manage')
+
+        self.assertEqual(response.status_code, 401)
+        self.assertEqual(response.get_json()['error'], 'Not logged in')
+
+        with self.client.session_transaction() as current_session:
+            self.assertNotIn('user_id', current_session)
+            self.assertNotIn('role', current_session)
 
     def test_coordinator_can_view_applications(self):
 
