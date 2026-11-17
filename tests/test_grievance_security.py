@@ -1,6 +1,7 @@
 
 import pytest
 from unittest.mock import MagicMock, patch
+from flask import session
 import app as app_module
 
 
@@ -18,8 +19,14 @@ def client():
         app_module.app.config["TESTING"] = True
         app_module.app.config["WTF_CSRF_ENABLED"] = False
 
-        with app_module.app.app_context():
-            yield app_module.app.test_client()
+        with patch(
+            "routes.grievance.get_session_user",
+            side_effect=lambda user_id: type(
+                "SessionUser", (), {"role": session.get("role")}
+            )()
+        ):
+            with app_module.app.app_context():
+                yield app_module.app.test_client()
 
     finally:
         # Always restore the original application settings.
@@ -238,6 +245,28 @@ def test_advisor_cannot_assign_grievances(client):
     assert response.get_json()["error"] == (
         "Only coordinators can assign grievances"
     )
+
+
+def test_stale_coordinator_session_is_cleared_after_role_change(client):
+    with client.session_transaction() as client_session:
+        client_session["user_id"] = 11
+        client_session["role"] = "coordinator"
+
+    current_user = MagicMock()
+    current_user.role = "student"
+
+    with patch(
+        "routes.grievance.get_session_user",
+        return_value=current_user
+    ):
+        response = client.get("/api/grievances/manage")
+
+    assert response.status_code == 401
+    assert response.get_json()["error"] == "Not logged in"
+
+    with client.session_transaction() as client_session:
+        assert "user_id" not in client_session
+        assert "role" not in client_session
 
 
 def test_student_cannot_access_advisor_dashboard(client):

@@ -2,7 +2,7 @@
 from flask import Blueprint, request, jsonify, session
 from sqlalchemy.exc import SQLAlchemyError
 from extensions import db
-from models import PlacementDrive, Company
+from models import PlacementDrive, Company, User
 from datetime import datetime
 import math
 
@@ -10,11 +10,27 @@ import math
 drive_bp = Blueprint('drive', __name__)
 
 
+def get_session_user(user_id):
+    """Load the current account record for session validation."""
+    return db.session.get(User, user_id)
+
+
 def require_coordinator():
-    if 'user_id' not in session:
+    """Check login and verify the coordinator role against the database."""
+    user_id = session.get('user_id')
+
+    if not user_id:
         return jsonify({'error': 'Not logged in'}), 401
 
-    if session.get('role') != 'coordinator':
+    session_role = session.get('role')
+    user = get_session_user(user_id)
+
+    # Invalidate sessions for deleted accounts or changed roles.
+    if not user or user.role != session_role:
+        session.clear()
+        return jsonify({'error': 'Not logged in'}), 401
+
+    if session_role != 'coordinator':
         return jsonify({
             'error': 'Only coordinators can perform this action'
         }), 403

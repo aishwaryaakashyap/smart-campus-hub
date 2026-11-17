@@ -9,6 +9,7 @@ from extensions import db
 
 from models import (
     User,
+    PasswordResetToken,
     Student,
     Company,
     PlacementDrive,
@@ -26,6 +27,7 @@ from models import (
 
 from routes.company import company_bp
 from routes.auth import auth_bp
+from routes.password_reset import password_reset_bp
 from routes.placement_drive import drive_bp
 from routes.application import application_bp
 from routes.student import student_bp
@@ -51,6 +53,7 @@ db.init_app(app)
 
 # Authentication
 app.register_blueprint(auth_bp, url_prefix="/api/auth")
+app.register_blueprint(password_reset_bp, url_prefix="/api/auth")
 
 # Company management
 app.register_blueprint(company_bp, url_prefix="/api/companies")

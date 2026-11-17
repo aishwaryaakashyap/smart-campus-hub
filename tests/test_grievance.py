@@ -1,6 +1,7 @@
 import unittest
 from datetime import datetime
 from unittest.mock import patch, MagicMock
+from flask import session
 
 from app import app
 
@@ -13,8 +14,16 @@ class GrievanceSecurityTests(unittest.TestCase):
         self.app_context = app.app_context()
         self.app_context.push()
         self.client = app.test_client()
+        self.current_user_patcher = patch(
+            "routes.grievance.get_session_user",
+            side_effect=lambda user_id: type(
+                "SessionUser", (), {"role": session.get("role")}
+            )()
+        )
+        self.current_user_patcher.start()
 
     def tearDown(self):
+        self.current_user_patcher.stop()
         self.app_context.pop()
 
     def test_rejects_unauthenticated_submission(self):

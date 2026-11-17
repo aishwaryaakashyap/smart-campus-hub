@@ -2,6 +2,7 @@ import unittest
 from types import SimpleNamespace
 from unittest.mock import patch, call
 
+from flask import session
 from app import app
 
 
@@ -27,6 +28,15 @@ class CompanyUpdateTests(unittest.TestCase):
 
         self.client = app.test_client()
 
+        self.current_user_patcher = patch(
+            "routes.company_update.get_session_user",
+            side_effect=lambda user_id: SimpleNamespace(
+                role=session.get("role")
+            )
+        )
+        self.current_user_patcher.start()
+        self.addCleanup(self.current_user_patcher.stop)
+
     def set_session(self, user_id=1, role="coordinator"):
         with self.client.session_transaction() as session:
             session["user_id"] = user_id
@@ -43,6 +53,31 @@ class CompanyUpdateTests(unittest.TestCase):
         )
 
         self.assertEqual(response.status_code, 401)
+
+    def test_stale_coordinator_session_is_cleared_after_role_change(self):
+        self.set_session(user_id=20, role="coordinator")
+
+        changed_user = SimpleNamespace(role="student")
+
+        with patch(
+            "routes.company_update.get_session_user",
+            return_value=changed_user
+        ):
+            response = self.client.post(
+                "/api/updates/",
+                json={
+                    "company_id": 5,
+                    "title": "Hiring update",
+                    "message": "The deadline has changed."
+                }
+            )
+
+        self.assertEqual(response.status_code, 401)
+        self.assertEqual(response.get_json()["error"], "Not logged in")
+
+        with self.client.session_transaction() as current_session:
+            self.assertNotIn("user_id", current_session)
+            self.assertNotIn("role", current_session)
 
     def test_student_cannot_publish_update(self):
         self.set_session(role="student")
@@ -205,7 +240,7 @@ class CompanyUpdateTests(unittest.TestCase):
         self.set_session(user_id=999, role="student")
 
         with patch(
-            "routes.company_update.db.session.get",
+            "routes.company_update.get_session_user",
             return_value=None
         ):
             response = self.client.get("/api/updates/")
@@ -241,7 +276,7 @@ class CompanyUpdateTests(unittest.TestCase):
 
         with patch(
             "routes.company_update.db.session.get",
-            side_effect=[user, company]
+            return_value=company
         ), patch(
             "routes.company_update.CompanyUpdate.query"
         ) as update_query:
@@ -258,10 +293,7 @@ class CompanyUpdateTests(unittest.TestCase):
 
         with patch(
             "routes.company_update.db.session.get",
-            side_effect=[
-                SimpleNamespace(id=101),
-                None
-            ]
+            return_value=None
         ):
             response = self.client.get("/api/updates/company/999")
 

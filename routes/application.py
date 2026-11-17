@@ -3,26 +3,51 @@ from flask import Blueprint, request, jsonify, session
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 
 from extensions import db
-from models import Application, Student, PlacementDrive
+from models import Application, Student, PlacementDrive, User
 from services.eligibility import check_eligibility
 from services.notifications import create_notification
 
 application_bp = Blueprint('application', __name__)
 
 
-def require_student():
-    if 'user_id' not in session:
-        return None, (jsonify({'error': 'Not logged in'}), 401)
+def get_session_user(user_id):
+    """Load the current account record for session validation."""
+    return db.session.get(User, user_id)
 
-    if session.get('role') != 'student':
-        return None, (
-            jsonify({'error': 'Only students can perform this action'}),
+
+def require_session_role(allowed_roles, forbidden_message):
+    """Verify that the session role matches the current database role."""
+    user_id = session.get('user_id')
+
+    if not user_id:
+        return None, None, (jsonify({'error': 'Not logged in'}), 401)
+
+    session_role = session.get('role')
+    user = get_session_user(user_id)
+
+    if not user or user.role != session_role:
+        session.clear()
+        return None, None, (jsonify({'error': 'Not logged in'}), 401)
+
+    if session_role not in allowed_roles:
+        return None, None, (
+            jsonify({'error': forbidden_message}),
             403
         )
 
-    student = Student.query.filter_by(
-        user_id=session['user_id']
-    ).first()
+    return user_id, session_role, None
+
+
+def require_student():
+    user_id, _, error = require_session_role(
+        ('student',),
+        'Only students can perform this action'
+    )
+
+    if error:
+        return None, error
+
+    student = Student.query.filter_by(user_id=user_id).first()
 
     if not student:
         return None, (
@@ -36,16 +61,11 @@ def require_student():
 
 
 def require_coordinator():
-    """Check if logged-in user is a coordinator."""
-    if 'user_id' not in session:
-        return jsonify({'error': 'Not logged in'}), 401
-
-    if session.get('role') != 'coordinator':
-        return jsonify({
-            'error': 'Only coordinators can perform this action'
-        }), 403
-
-    return None
+    _, _, error = require_session_role(
+        ('coordinator',),
+        'Only coordinators can perform this action'
+    )
+    return error
 
 
 def get_json_object():
