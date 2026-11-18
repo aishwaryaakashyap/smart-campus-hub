@@ -1,11 +1,27 @@
 from extensions import db
 
+
 class Student(db.Model):
     __tablename__ = 'students'
 
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, unique=True)
-    register_number = db.Column(db.String(30), unique=True, nullable=False)
+    id = db.Column(
+        db.Integer,
+        primary_key=True
+    )
+
+    user_id = db.Column(
+        db.Integer,
+        db.ForeignKey('users.id'),
+        nullable=False,
+        unique=True
+    )
+
+    register_number = db.Column(
+        db.String(30),
+        unique=True,
+        nullable=False
+    )
+
     course = db.Column(db.String(50))
     branch = db.Column(db.String(50))
     semester = db.Column(db.Integer)
@@ -13,7 +29,32 @@ class Student(db.Model):
     phone = db.Column(db.String(15))
     graduation_year = db.Column(db.Integer)
 
-    user = db.relationship('User', backref=db.backref('student_profile', uselist=False))
+    academic_class_id = db.Column(
+        db.Integer,
+        db.ForeignKey(
+            'academic_classes.id',
+            ondelete='SET NULL'
+        ),
+        nullable=True,
+        index=True
+    )
+
+    user = db.relationship(
+        'User',
+        backref=db.backref(
+            'student_profile',
+            uselist=False
+        )
+    )
+
+    academic_class = db.relationship(
+        'AcademicClass',
+        backref=db.backref(
+            'students',
+            lazy='select'
+        ),
+        foreign_keys=[academic_class_id]
+    )
 
     def __repr__(self):
         return f'<Student {self.register_number}>'
