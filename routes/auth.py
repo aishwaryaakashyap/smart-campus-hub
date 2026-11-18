@@ -136,6 +136,11 @@ def login():
             'error': 'Invalid email or password'
         }), 401
 
+    if user.account_status != User.STATUS_ACTIVE:
+        return jsonify({
+            'error': 'This account is not active. Contact the Coordinator.'
+        }), 403
+
     session.clear()
     session['user_id'] = user.id
     session['role'] = user.role
@@ -166,10 +171,13 @@ def me():
 
     user = db.session.get(User, session['user_id'])
 
-    if not user:
+    if (
+        not user
+        or user.account_status != User.STATUS_ACTIVE
+    ):
         session.clear()
         return jsonify({
-            'error': 'Not logged in'
+            'error': 'Not logged in or account is not active'
         }), 401
 
     return jsonify({
@@ -197,7 +205,11 @@ def student_dashboard():
 
     user = db.session.get(User, session['user_id'])
 
-    if not user or user.role != 'student':
+    if (
+        not user
+        or user.role != 'student'
+        or user.account_status != User.STATUS_ACTIVE
+    ):
         session.clear()
         return redirect(url_for('auth.login_page'))
 

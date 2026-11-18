@@ -40,6 +40,9 @@ from routes.analytics import analytics_bp
 from routes.skill_gap import skill_gap_bp
 from routes.grievance import grievance_bp
 from routes.notifications import notifications_bp
+from routes.academic_admin import academic_admin_bp
+from routes.advisor_admin import advisor_admin_bp
+from routes.chairperson_admin import chairperson_admin_bp
 
 
 app = Flask(__name__)
@@ -91,6 +94,9 @@ app.register_blueprint(grievance_bp, url_prefix="/api/grievances")
 
 # In-app notifications
 app.register_blueprint(notifications_bp, url_prefix="/api/notifications")
+app.register_blueprint(academic_admin_bp, url_prefix="/api/academic-admin")
+app.register_blueprint(advisor_admin_bp, url_prefix="/api/academic-admin")
+app.register_blueprint(chairperson_admin_bp, url_prefix="/api/academic-admin")
 
 
 # Skill Gap Analysis Page
@@ -117,7 +123,11 @@ def coordinator_dashboard_page():
 
     user = db.session.get(User, session["user_id"])
 
-    if not user or user.role != "coordinator":
+    if (
+        not user
+        or user.role != "coordinator"
+        or user.account_status != User.STATUS_ACTIVE
+    ):
         session.clear()
         return redirect(url_for("auth.login_page"))
 
@@ -139,7 +149,11 @@ def coordinator_grievances_page():
 
     user = db.session.get(User, session["user_id"])
 
-    if not user or user.role != "coordinator":
+    if (
+        not user
+        or user.role != "coordinator"
+        or user.account_status != User.STATUS_ACTIVE
+    ):
         session.clear()
         return redirect(url_for("auth.login_page"))
 
@@ -161,7 +175,11 @@ def advisor_dashboard_page():
 
     user = db.session.get(User, session["user_id"])
 
-    if not user or user.role != "advisor":
+    if (
+        not user
+        or user.role != "advisor"
+        or user.account_status != User.STATUS_ACTIVE
+    ):
         session.clear()
         return redirect(url_for("auth.login_page"))
 

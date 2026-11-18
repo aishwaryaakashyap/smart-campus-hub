@@ -231,3 +231,361 @@ header h2 {
         transform: none;
     }
 }
+
+
+/* Advisor Account Management */
+.advisor-admin-section {
+    scroll-margin-top: 24px;
+}
+
+.advisor-admin-intro {
+    color: var(--sch-muted);
+    line-height: 1.65;
+    margin: 8px 0 22px;
+}
+
+.advisor-admin-heading {
+    color: var(--sch-brand-dark);
+    margin: 22px 0 14px;
+}
+
+.advisor-admin-form {
+    align-items: start;
+}
+
+.advisor-admin-form input {
+    min-width: 0;
+}
+
+.advisor-admin-toolbar {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 14px;
+    flex-wrap: wrap;
+    margin: 22px 0 12px;
+}
+
+.advisor-admin-toolbar > div {
+    display: grid;
+    gap: 7px;
+    min-width: min(100%, 260px);
+}
+
+.advisor-admin-toolbar label {
+    color: var(--sch-text);
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.advisor-admin-toolbar select {
+    width: 100%;
+    padding: 11px 12px;
+    border: 1px solid var(--sch-border);
+    border-radius: var(--sch-radius-sm);
+    background: #fff;
+    color: var(--sch-text);
+    font: inherit;
+}
+
+.advisor-admin-toolbar select:focus,
+.advisor-admin-form input:focus {
+    outline: 2px solid var(--sch-focus);
+    outline-offset: 1px;
+}
+
+.advisor-account-list {
+    margin-top: 12px;
+}
+
+.advisor-account-card {
+    min-width: 0;
+}
+
+.advisor-account-card h3 {
+    overflow-wrap: anywhere;
+}
+
+.advisor-account-card p {
+    line-height: 1.55;
+}
+
+.advisor-account-status {
+    display: inline-block;
+    width: fit-content;
+    padding: 5px 10px;
+    margin: 4px 0 10px;
+    border-radius: 20px;
+    background: #f1edf0;
+    color: var(--sch-text);
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: capitalize;
+}
+
+.advisor-account-status.pending {
+    background: #fff4d6;
+    color: #805500;
+}
+
+.advisor-account-status.active {
+    background: #e4f5eb;
+    color: #187343;
+}
+
+.advisor-account-status.rejected {
+    background: #fde8e7;
+    color: #a52a2a;
+}
+
+.advisor-account-status.deactivated {
+    background: #ececec;
+    color: #555;
+}
+
+.advisor-account-meta {
+    color: var(--sch-muted);
+    font-size: 13px;
+    overflow-wrap: anywhere;
+}
+
+.advisor-admin-action:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.advisor-account-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 9px;
+    margin-top: 14px;
+}
+
+@media (max-width: 600px) {
+    .advisor-admin-toolbar {
+        align-items: stretch;
+    }
+
+    .advisor-admin-toolbar > div,
+    .advisor-admin-toolbar button {
+        width: 100%;
+    }
+
+    .advisor-account-actions button {
+        flex: 1 1 auto;
+    }
+}
+
+
+/* Chairperson Account Management */
+.chairperson-admin-section {
+    scroll-margin-top: 24px;
+}
+
+.chairperson-primary-note {
+    padding: 13px 15px;
+    margin: 8px 0 20px;
+    border: 1px solid var(--sch-border);
+    border-radius: var(--sch-radius-sm);
+    background: #f7f9fc;
+    color: var(--sch-text);
+    line-height: 1.6;
+    font-size: 14px;
+}
+
+.chairperson-account-card.is-primary {
+    border-left: 4px solid var(--sch-brand-dark);
+}
+
+.chairperson-primary-badge {
+    display: inline-block;
+    width: fit-content;
+    padding: 5px 10px;
+    margin: 4px 0 10px 7px;
+    border-radius: 20px;
+    background: #e6efff;
+    color: #214f91;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+
+/* Academic Class Management */
+.academic-admin-section {
+    scroll-margin-top: 24px;
+}
+
+.academic-admin-intro {
+    color: var(--sch-muted);
+    line-height: 1.65;
+    margin: 8px 0 22px;
+}
+
+.academic-admin-section h3 {
+    color: var(--sch-brand-dark);
+    margin: 22px 0 14px;
+}
+
+.academic-admin-form {
+    display: grid;
+    gap: 15px;
+}
+
+.academic-admin-form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 15px;
+}
+
+.academic-admin-form-grid label {
+    display: grid;
+    gap: 7px;
+    color: var(--sch-text);
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.academic-admin-form-grid input,
+.academic-class-advisor-select,
+.academic-admin-toolbar select {
+    width: 100%;
+    min-width: 0;
+    padding: 11px 12px;
+    border: 1px solid var(--sch-border);
+    border-radius: var(--sch-radius-sm);
+    background: #fff;
+    color: var(--sch-text);
+    font: inherit;
+}
+
+.academic-admin-form-grid input:focus,
+.academic-class-advisor-select:focus,
+.academic-admin-toolbar select:focus {
+    outline: 2px solid var(--sch-focus);
+    outline-offset: 1px;
+}
+
+.academic-admin-form-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.academic-admin-form-actions button[hidden] {
+    display: none;
+}
+
+.academic-admin-toolbar {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 14px;
+    margin: 22px 0 12px;
+}
+
+.academic-admin-toolbar > div {
+    display: grid;
+    gap: 7px;
+    min-width: min(100%, 260px);
+}
+
+.academic-admin-toolbar label {
+    color: var(--sch-text);
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.academic-class-list {
+    margin-top: 12px;
+}
+
+.academic-class-card {
+    min-width: 0;
+}
+
+.academic-class-card h3 {
+    overflow-wrap: anywhere;
+}
+
+.academic-class-meta {
+    color: var(--sch-muted);
+    font-size: 13px;
+}
+
+.academic-class-advisor-info {
+    line-height: 1.55;
+    overflow-wrap: anywhere;
+}
+
+.academic-class-status {
+    display: inline-block;
+    width: fit-content;
+    padding: 5px 10px;
+    margin: 4px 0 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.academic-class-status.active {
+    background: #e4f5eb;
+    color: #187343;
+}
+
+.academic-class-status.archived {
+    background: #ececec;
+    color: #555;
+}
+
+.academic-class-advisor-control {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    margin-top: 14px;
+    flex-wrap: wrap;
+}
+
+.academic-class-advisor-control select {
+    flex: 1 1 220px;
+}
+
+.academic-class-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 9px;
+    margin-top: 14px;
+}
+
+.academic-class-action:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+@media (max-width: 600px) {
+    .academic-admin-form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .academic-admin-toolbar {
+        align-items: stretch;
+    }
+
+    .academic-admin-toolbar > div,
+    .academic-admin-toolbar button {
+        width: 100%;
+    }
+
+    .academic-class-advisor-control {
+        align-items: stretch;
+    }
+
+    .academic-class-advisor-control select,
+    .academic-class-advisor-control button {
+        width: 100%;
+    }
+
+    .academic-class-actions button {
+        flex: 1 1 auto;
+    }
+}

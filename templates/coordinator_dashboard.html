@@ -387,6 +387,33 @@
           </p>
           <a href="/skill-gap">Open Skill Gap Analysis</a>
         </div>
+
+        <div class="management-card">
+          <h3>Advisor Account Management</h3>
+          <p>
+            Create Advisor accounts, review pending accounts and manage
+            account activation.
+          </p>
+          <a href="#advisor-management">Manage Advisors</a>
+        </div>
+
+        <div class="management-card">
+          <h3>Chairperson Account Management</h3>
+          <p>
+            Create Chairperson accounts, review account requests and
+            designate the institution's primary Chairperson.
+          </p>
+          <a href="#chairperson-management">Manage Chairpersons</a>
+        </div>
+
+        <div class="management-card">
+          <h3>Academic Class Management</h3>
+          <p>
+            Create and manage academic classes, assign Advisors,
+            and archive or restore class records.
+          </p>
+          <a href="#academic-class-management">Manage Academic Classes</a>
+        </div>
       </section>
 
       <section id="company-management" class="company-section">
@@ -643,6 +670,292 @@
           }
         }
       </style>
+      <section id="advisor-management" class="company-section advisor-admin-section">
+        <h2>Advisor Account Management</h2>
+        <p class="advisor-admin-intro">
+          Create Advisor accounts, approve or reject pending accounts,
+          and manage existing Advisor access. Approved Advisors receive
+          a secure email link to set their password.
+        </p>
+
+        <h3 class="advisor-admin-heading">Create Advisor Account</h3>
+
+        <form id="advisorCreateForm" class="company-form advisor-admin-form">
+          <input
+            type="text"
+            id="advisorName"
+            name="name"
+            placeholder="Advisor Full Name"
+            maxlength="100"
+            required
+          />
+
+          <input
+            type="email"
+            id="advisorEmail"
+            name="email"
+            placeholder="Institutional Email Address"
+            maxlength="120"
+            required
+          />
+
+          <button type="submit" id="advisorCreateButton">
+            Create Pending Advisor
+          </button>
+        </form>
+
+        <p
+          id="advisorAdminMessage"
+          class="company-message"
+          aria-live="polite"
+          role="status"
+        ></p>
+
+        <div class="advisor-admin-toolbar">
+          <div>
+            <label for="advisorStatusFilter">Filter Advisor Accounts</label>
+            <select id="advisorStatusFilter">
+              <option value="all">All Accounts</option>
+              <option value="pending">Pending</option>
+              <option value="active">Active</option>
+              <option value="rejected">Rejected</option>
+              <option value="deactivated">Deactivated</option>
+            </select>
+          </div>
+
+          <button
+            type="button"
+            id="refreshAdvisorAccounts"
+            class="company-action cancel"
+          >
+            Refresh Accounts
+          </button>
+        </div>
+
+        <h3 class="advisor-admin-heading">Advisor Accounts</h3>
+
+        <div
+          id="advisorAccountList"
+          class="company-list advisor-account-list"
+          aria-live="polite"
+        >
+          <p class="loading">Loading Advisor accounts...</p>
+        </div>
+      </section>
+
+
+
+      <!-- ACADEMIC CLASS MANAGEMENT -->
+      <section
+        id="academic-class-management"
+        class="company-section academic-admin-section"
+      >
+        <h2>Academic Class Management</h2>
+
+        <p class="academic-admin-intro">
+          Create academic classes, update class details, assign or remove
+          Advisors, and manage archived classes. Existing student records
+          and class history are preserved.
+        </p>
+
+        <h3 id="academicClassFormHeading">Create Academic Class</h3>
+
+        <form id="academicClassForm" class="academic-admin-form">
+          <input
+            type="hidden"
+            id="academicClassId"
+          />
+
+          <div class="academic-admin-form-grid">
+            <label>
+              Course
+              <input
+                type="text"
+                id="academicCourse"
+                maxlength="50"
+                placeholder="Example: BCA"
+                required
+              />
+            </label>
+
+            <label>
+              Branch
+              <input
+                type="text"
+                id="academicBranch"
+                maxlength="50"
+                placeholder="Example: CSE"
+                required
+              />
+            </label>
+
+            <label>
+              Section
+              <input
+                type="text"
+                id="academicSection"
+                maxlength="20"
+                placeholder="Example: A"
+                required
+              />
+            </label>
+
+            <label>
+              Admission Year
+              <input
+                type="number"
+                id="academicAdmissionYear"
+                min="1900"
+                max="2100"
+                step="1"
+                placeholder="Example: 2024"
+                required
+              />
+            </label>
+          </div>
+
+          <div class="academic-admin-form-actions">
+            <button type="submit" id="academicClassSubmitButton">
+              Create Academic Class
+            </button>
+
+            <button
+              type="button"
+              id="cancelAcademicClassEdit"
+              class="company-action cancel"
+              hidden
+            >
+              Cancel Editing
+            </button>
+          </div>
+        </form>
+
+        <p
+          id="academicClassAdminMessage"
+          class="company-message"
+          aria-live="polite"
+          role="status"
+        ></p>
+
+        <div class="academic-admin-toolbar">
+          <div>
+            <label for="academicClassFilter">Display Classes</label>
+            <select id="academicClassFilter">
+              <option value="active">Active Classes Only</option>
+              <option value="all">All Classes Including Archived</option>
+            </select>
+          </div>
+
+          <button
+            type="button"
+            id="refreshAcademicClasses"
+            class="company-action cancel"
+          >
+            Refresh Classes
+          </button>
+        </div>
+
+        <h3 class="academic-admin-list-heading">Academic Classes</h3>
+
+        <div
+          id="academicClassList"
+          class="company-list academic-class-list"
+          aria-live="polite"
+        >
+          <p class="loading">Loading academic classes...</p>
+        </div>
+      </section>
+
+      <!-- CHAIRPERSON ACCOUNT MANAGEMENT -->
+      <section
+        id="chairperson-management"
+        class="company-section advisor-admin-section chairperson-admin-section"
+      >
+        <h2>Chairperson Account Management</h2>
+
+        <p class="advisor-admin-intro">
+          Create Chairperson accounts, approve or reject pending accounts,
+          manage account access and designate one active primary Chairperson.
+          Approved Chairpersons receive a secure email link to set their password.
+        </p>
+
+        <div class="chairperson-primary-note">
+          Only one active Chairperson can be designated as the institution's
+          primary Chairperson. Deactivating the primary account clears the
+          designation.
+        </div>
+
+        <h3 class="advisor-admin-heading">Create Chairperson Account</h3>
+
+        <form
+          id="chairpersonCreateForm"
+          class="company-form advisor-admin-form"
+        >
+          <input
+            type="text"
+            id="chairpersonName"
+            name="name"
+            placeholder="Chairperson Full Name"
+            maxlength="100"
+            required
+          />
+
+          <input
+            type="email"
+            id="chairpersonEmail"
+            name="email"
+            placeholder="Institutional Email Address"
+            maxlength="120"
+            required
+          />
+
+          <button type="submit" id="chairpersonCreateButton">
+            Create Pending Chairperson
+          </button>
+        </form>
+
+        <p
+          id="chairpersonAdminMessage"
+          class="company-message"
+          aria-live="polite"
+          role="status"
+        ></p>
+
+        <div class="advisor-admin-toolbar">
+          <div>
+            <label for="chairpersonStatusFilter">
+              Filter Chairperson Accounts
+            </label>
+
+            <select id="chairpersonStatusFilter">
+              <option value="all">All Accounts</option>
+              <option value="pending">Pending</option>
+              <option value="active">Active</option>
+              <option value="rejected">Rejected</option>
+              <option value="deactivated">Deactivated</option>
+            </select>
+          </div>
+
+          <button
+            type="button"
+            id="refreshChairpersonAccounts"
+            class="company-action cancel"
+          >
+            Refresh Accounts
+          </button>
+        </div>
+
+        <h3 class="advisor-admin-heading">Chairperson Accounts</h3>
+
+        <div
+          id="chairpersonAccountList"
+          class="company-list advisor-account-list"
+          aria-live="polite"
+        >
+          <p class="loading">Loading Chairperson accounts...</p>
+        </div>
+      </section>
+
     </main>
 
     <footer>
@@ -1379,6 +1692,1425 @@
       }
 
       loadPlacementOverview();
+
+      // ================= ADVISOR ACCOUNT MANAGEMENT =================
+
+      const advisorCreateForm = document.getElementById("advisorCreateForm");
+      const advisorCreateButton = document.getElementById("advisorCreateButton");
+      const advisorAccountList = document.getElementById("advisorAccountList");
+      const advisorAdminMessage = document.getElementById("advisorAdminMessage");
+      const advisorStatusFilter = document.getElementById("advisorStatusFilter");
+
+      function showAdvisorAdminMessage(message, type = "success") {
+        advisorAdminMessage.textContent = message;
+        advisorAdminMessage.className = "company-message " + type;
+      }
+
+      function advisorAdminDate(value) {
+        if (!value) return "Not recorded";
+
+        const date = new Date(value);
+
+        if (Number.isNaN(date.getTime())) {
+          return "Not recorded";
+        }
+
+        return date.toLocaleString();
+      }
+
+      function advisorAdminText(parent, tagName, text, className = "") {
+        const element = document.createElement(tagName);
+        element.textContent = text;
+
+        if (className) {
+          element.className = className;
+        }
+
+        parent.appendChild(element);
+        return element;
+      }
+
+      function createAdvisorActionButton(label, action, advisorId, style = "") {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.textContent = label;
+        button.className = "company-action advisor-admin-action";
+
+        if (style) {
+          button.classList.add(style);
+        }
+
+        button.addEventListener("click", () => {
+          runAdvisorAccountAction(advisorId, action, button);
+        });
+
+        return button;
+      }
+
+      function renderAdvisorAccount(account) {
+        const card = document.createElement("article");
+        card.className = "company-item advisor-account-card";
+
+        advisorAdminText(
+          card,
+          "h3",
+          account.name || "Unnamed Advisor"
+        );
+
+        advisorAdminText(
+          card,
+          "p",
+          "Email: " + (account.email || "Not available")
+        );
+
+        const status = String(account.account_status || "unknown").toLowerCase();
+
+        advisorAdminText(
+          card,
+          "span",
+          status,
+          "advisor-account-status " + status
+        );
+
+        advisorAdminText(
+          card,
+          "p",
+          "Account ID: " + account.id,
+          "advisor-account-meta"
+        );
+
+        advisorAdminText(
+          card,
+          "p",
+          "Created: " + advisorAdminDate(account.created_at),
+          "advisor-account-meta"
+        );
+
+        if (account.reviewed_by_name) {
+          advisorAdminText(
+            card,
+            "p",
+            "Last reviewed by: " + account.reviewed_by_name,
+            "advisor-account-meta"
+          );
+        }
+
+        if (account.reviewed_at) {
+          advisorAdminText(
+            card,
+            "p",
+            "Last reviewed: " + advisorAdminDate(account.reviewed_at),
+            "advisor-account-meta"
+          );
+        }
+
+        if (account.rejection_reason) {
+          advisorAdminText(
+            card,
+            "p",
+            "Rejection reason: " + account.rejection_reason,
+            "advisor-account-meta"
+          );
+        }
+
+        const actions = document.createElement("div");
+        actions.className = "advisor-account-actions";
+
+        if (status === "pending") {
+          actions.append(
+            createAdvisorActionButton(
+              "Approve",
+              "approve",
+              account.id
+            ),
+            createAdvisorActionButton(
+              "Reject",
+              "reject",
+              account.id,
+              "delete"
+            )
+          );
+        } else if (status === "active") {
+          actions.append(
+            createAdvisorActionButton(
+              "Deactivate",
+              "deactivate",
+              account.id,
+              "delete"
+            ),
+            createAdvisorActionButton(
+              "Resend Setup Email",
+              "setup-email",
+              account.id,
+              "cancel"
+            )
+          );
+        } else if (status === "deactivated") {
+          actions.append(
+            createAdvisorActionButton(
+              "Reactivate",
+              "reactivate",
+              account.id
+            ),
+            createAdvisorActionButton(
+              "Delete",
+              "delete",
+              account.id,
+              "delete"
+            )
+          );
+        }
+
+        if (actions.children.length > 0) {
+          card.appendChild(actions);
+        }
+
+        return card;
+      }
+
+      async function loadAdvisorAccounts() {
+        advisorAccountList.replaceChildren();
+
+        const loading = document.createElement("p");
+        loading.className = "loading";
+        loading.textContent = "Loading Advisor accounts...";
+        advisorAccountList.appendChild(loading);
+
+        try {
+          const selectedStatus = advisorStatusFilter.value;
+          const result = await companyRequest(
+            "/api/academic-admin/advisors/accounts?status=" +
+              encodeURIComponent(selectedStatus)
+          );
+
+          advisorAccountList.replaceChildren();
+
+          const accounts = Array.isArray(result.accounts)
+            ? result.accounts
+            : [];
+
+          if (accounts.length === 0) {
+            advisorAdminText(
+              advisorAccountList,
+              "p",
+              "No Advisor accounts found for this filter."
+            );
+            return;
+          }
+
+          accounts.forEach((account) => {
+            advisorAccountList.appendChild(
+              renderAdvisorAccount(account)
+            );
+          });
+        } catch (error) {
+          advisorAccountList.replaceChildren();
+
+          advisorAdminText(
+            advisorAccountList,
+            "p",
+            error.message || "Unable to load Advisor accounts.",
+            "error"
+          );
+        }
+      }
+
+      async function runAdvisorAccountAction(advisorId, action, button) {
+        const actionLabels = {
+          approve: "Advisor approved.",
+          reject: "Advisor account rejected.",
+          deactivate: "Advisor account deactivated.",
+          reactivate: "Advisor account reactivated.",
+          "setup-email": "Advisor setup email sent.",
+          delete: "Advisor account permanently deleted."
+        };
+
+        let requestBody = null;
+
+        if (action === "reject") {
+          const reason = window.prompt(
+            "Enter the reason for rejecting this Advisor account:"
+          );
+
+          if (reason === null) return;
+
+          requestBody = { reason: reason.trim() };
+        }
+
+        if (action === "deactivate") {
+          const confirmed = window.confirm(
+            "Deactivate this Advisor account? Existing class assignments " +
+            "and grievance records will be preserved."
+          );
+
+          if (!confirmed) return;
+        }
+
+        if (action === "delete") {
+          const confirmed = window.confirm(
+            "PERMANENTLY DELETE this deactivated Advisor account? " +
+            "This cannot be undone. Deletion will be blocked if " +
+            "institutional records still reference the account."
+          );
+
+          if (!confirmed) {
+            return;
+          }
+        }
+
+        const originalLabel = button.textContent;
+        button.disabled = true;
+        button.textContent = "Please wait...";
+
+        try {
+          const result = await companyRequest(
+            "/api/academic-admin/advisors/" +
+              encodeURIComponent(advisorId) +
+              "/" +
+              action,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json"
+              },
+              ...(requestBody !== null
+                ? { body: JSON.stringify(requestBody) }
+                : {})
+            }
+          );
+
+          if (
+            (action === "approve" || action === "setup-email") &&
+            result.email_sent === false
+          ) {
+            showAdvisorAdminMessage(
+              result.message || "The setup email could not be sent.",
+              "error"
+            );
+          } else {
+            showAdvisorAdminMessage(
+              result.message || actionLabels[action] || "Account updated."
+            );
+          }
+
+          await loadAdvisorAccounts();
+        } catch (error) {
+          showAdvisorAdminMessage(
+            error.message || "Unable to update Advisor account.",
+            "error"
+          );
+
+          button.disabled = false;
+          button.textContent = originalLabel;
+        }
+      }
+
+      advisorCreateForm.addEventListener("submit", async function (event) {
+        event.preventDefault();
+
+        const name = document.getElementById("advisorName").value.trim();
+        const email = document.getElementById("advisorEmail").value.trim();
+
+        advisorCreateButton.disabled = true;
+        advisorCreateButton.textContent = "Creating...";
+
+        try {
+          const result = await companyRequest(
+            "/api/academic-admin/advisors",
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json"
+              },
+              body: JSON.stringify({
+                name: name,
+                email: email
+              })
+            }
+          );
+
+          advisorCreateForm.reset();
+
+          showAdvisorAdminMessage(
+            result.message || "Advisor account created successfully."
+          );
+
+          advisorStatusFilter.value = "pending";
+          await loadAdvisorAccounts();
+        } catch (error) {
+          showAdvisorAdminMessage(
+            error.message || "Unable to create Advisor account.",
+            "error"
+          );
+        } finally {
+          advisorCreateButton.disabled = false;
+          advisorCreateButton.textContent = "Create Pending Advisor";
+        }
+      });
+
+      advisorStatusFilter.addEventListener(
+        "change",
+        loadAdvisorAccounts
+      );
+
+      document
+        .getElementById("refreshAdvisorAccounts")
+        .addEventListener("click", loadAdvisorAccounts);
+
+      loadAdvisorAccounts();
+
+
+
+      // ================= ACADEMIC CLASS MANAGEMENT =================
+
+      const academicClassForm = document.getElementById(
+        "academicClassForm"
+      );
+
+      const academicClassList = document.getElementById(
+        "academicClassList"
+      );
+
+      const academicClassMessage = document.getElementById(
+        "academicClassAdminMessage"
+      );
+
+      const academicClassFilter = document.getElementById(
+        "academicClassFilter"
+      );
+
+      const academicClassSubmitButton = document.getElementById(
+        "academicClassSubmitButton"
+      );
+
+      const cancelAcademicClassEdit = document.getElementById(
+        "cancelAcademicClassEdit"
+      );
+
+      let academicActiveAdvisors = [];
+
+      function showAcademicClassMessage(
+        message,
+        type = "success"
+      ) {
+        academicClassMessage.textContent = message;
+        academicClassMessage.className =
+          "company-message " + type;
+      }
+
+      function academicClassText(
+        parent,
+        tagName,
+        value,
+        className = ""
+      ) {
+        const element = document.createElement(tagName);
+        element.textContent = value;
+
+        if (className) {
+          element.className = className;
+        }
+
+        parent.appendChild(element);
+        return element;
+      }
+
+      function resetAcademicClassForm() {
+        academicClassForm.reset();
+
+        document.getElementById("academicClassId").value = "";
+
+        document.getElementById(
+          "academicClassFormHeading"
+        ).textContent = "Create Academic Class";
+
+        academicClassSubmitButton.textContent =
+          "Create Academic Class";
+
+        cancelAcademicClassEdit.hidden = true;
+      }
+
+      function editAcademicClass(academicClass) {
+        document.getElementById("academicClassId").value =
+          academicClass.id;
+
+        document.getElementById("academicCourse").value =
+          academicClass.course;
+
+        document.getElementById("academicBranch").value =
+          academicClass.branch;
+
+        document.getElementById("academicSection").value =
+          academicClass.section;
+
+        document.getElementById("academicAdmissionYear").value =
+          academicClass.admission_year;
+
+        document.getElementById(
+          "academicClassFormHeading"
+        ).textContent = "Edit Academic Class";
+
+        academicClassSubmitButton.textContent =
+          "Update Academic Class";
+
+        cancelAcademicClassEdit.hidden = false;
+
+        showAcademicClassMessage(
+          "Editing class ID " + academicClass.id + "."
+        );
+
+        document.getElementById(
+          "academic-class-management"
+        ).scrollIntoView({
+          behavior: "smooth",
+          block: "start"
+        });
+      }
+
+      function createAcademicClassAction(
+        label,
+        callback,
+        style = ""
+      ) {
+        const button = document.createElement("button");
+
+        button.type = "button";
+        button.textContent = label;
+        button.className = "company-action academic-class-action";
+
+        if (style) {
+          button.classList.add(style);
+        }
+
+        button.addEventListener("click", callback);
+
+        return button;
+      }
+
+      function renderAcademicClass(academicClass) {
+        const card = document.createElement("article");
+
+        card.className =
+          "company-item academic-class-card";
+
+        const title = [
+          academicClass.course,
+          academicClass.branch,
+          "Section " + academicClass.section
+        ].join(" - ");
+
+        academicClassText(card, "h3", title);
+
+        academicClassText(
+          card,
+          "span",
+          academicClass.is_active ? "Active" : "Archived",
+          "academic-class-status " +
+            (academicClass.is_active ? "active" : "archived")
+        );
+
+        academicClassText(
+          card,
+          "p",
+          "Admission Year: " + academicClass.admission_year
+        );
+
+        academicClassText(
+          card,
+          "p",
+          "Class ID: " + academicClass.id,
+          "academic-class-meta"
+        );
+
+        academicClassText(
+          card,
+          "p",
+          "Advisor: " +
+            (
+              academicClass.advisor
+                ? academicClass.advisor.name +
+                  " (" + academicClass.advisor.email + ")"
+                : "Not assigned"
+            ),
+          "academic-class-advisor-info"
+        );
+
+        const actions = document.createElement("div");
+        actions.className = "academic-class-actions";
+
+        actions.appendChild(
+          createAcademicClassAction(
+            "Edit",
+            () => editAcademicClass(academicClass)
+          )
+        );
+
+        if (academicClass.is_active) {
+          // Advisor assignment is supported only for active classes.
+          const advisorControl = document.createElement("div");
+          advisorControl.className = "academic-class-advisor-control";
+
+          const advisorSelect = document.createElement("select");
+          advisorSelect.className = "academic-class-advisor-select";
+
+          const unassignedOption = document.createElement("option");
+          unassignedOption.value = "";
+          unassignedOption.textContent = "No Advisor Assigned";
+          advisorSelect.appendChild(unassignedOption);
+
+          academicActiveAdvisors.forEach((advisor) => {
+            const option = document.createElement("option");
+            option.value = String(advisor.id);
+            option.textContent =
+              advisor.name + " (" + advisor.email + ")";
+            advisorSelect.appendChild(option);
+          });
+
+          advisorSelect.value = academicClass.advisor_user_id
+            ? String(academicClass.advisor_user_id)
+            : "";
+
+          const assignButton = createAcademicClassAction(
+            "Save Advisor",
+            () => {
+              saveAcademicClassAdvisor(
+                academicClass.id,
+                advisorSelect,
+                assignButton
+              );
+            }
+          );
+
+          advisorControl.append(
+            advisorSelect,
+            assignButton
+          );
+
+          card.appendChild(advisorControl);
+
+          actions.appendChild(
+            createAcademicClassAction(
+              "Archive",
+              () => changeAcademicClassStatus(
+                academicClass.id,
+                "archive"
+              ),
+              "delete"
+            )
+          );
+        } else {
+          actions.append(
+            createAcademicClassAction(
+              "Restore",
+              () => changeAcademicClassStatus(
+                academicClass.id,
+                "restore"
+              )
+            ),
+            createAcademicClassAction(
+              "Delete",
+              () => deleteAcademicClass(academicClass.id),
+              "delete"
+            )
+          );
+        }
+
+        card.appendChild(actions);
+        return card;
+      }
+
+      async function loadAcademicClasses() {
+        academicClassList.replaceChildren();
+
+        const loading = document.createElement("p");
+        loading.className = "loading";
+        loading.textContent = "Loading academic classes...";
+        academicClassList.appendChild(loading);
+
+        try {
+          const includeArchived =
+            academicClassFilter.value === "all";
+
+          const [classResult, advisorResult] = await Promise.all([
+            companyRequest(
+              "/api/academic-admin/classes?include_archived=" +
+                (includeArchived ? "true" : "false")
+            ),
+            companyRequest("/api/academic-admin/advisors")
+          ]);
+
+          academicActiveAdvisors = Array.isArray(
+            advisorResult.advisors
+          )
+            ? advisorResult.advisors
+            : [];
+
+          const classes = Array.isArray(classResult.classes)
+            ? classResult.classes
+            : [];
+
+          academicClassList.replaceChildren();
+
+          if (classes.length === 0) {
+            academicClassText(
+              academicClassList,
+              "p",
+              "No academic classes found. Create your first class using the form above."
+            );
+            return;
+          }
+
+          classes.forEach((academicClass) => {
+            academicClassList.appendChild(
+              renderAcademicClass(academicClass)
+            );
+          });
+        } catch (error) {
+          academicClassList.replaceChildren();
+
+          academicClassText(
+            academicClassList,
+            "p",
+            error.message || "Unable to load academic classes.",
+            "error"
+          );
+        }
+      }
+
+      async function saveAcademicClassAdvisor(
+        classId,
+        advisorSelect,
+        button
+      ) {
+        const originalLabel = button.textContent;
+
+        const selectedValue = advisorSelect.value;
+
+        const advisorUserId = selectedValue === ""
+          ? null
+          : Number(selectedValue);
+
+        if (
+          advisorUserId !== null &&
+          (!Number.isInteger(advisorUserId) || advisorUserId <= 0)
+        ) {
+          showAcademicClassMessage(
+            "Please select a valid Advisor.",
+            "error"
+          );
+          return;
+        }
+
+        button.disabled = true;
+        button.textContent = "Saving...";
+
+        try {
+          const result = await companyRequest(
+            "/api/academic-admin/classes/" +
+              encodeURIComponent(classId) +
+              "/advisor",
+            {
+              method: "PUT",
+              headers: {
+                "Content-Type": "application/json"
+              },
+              body: JSON.stringify({
+                advisor_user_id: advisorUserId
+              })
+            }
+          );
+
+          showAcademicClassMessage(
+            result.message || "Advisor assignment updated."
+          );
+
+          await loadAcademicClasses();
+        } catch (error) {
+          showAcademicClassMessage(
+            error.message || "Unable to update Advisor assignment.",
+            "error"
+          );
+
+          button.disabled = false;
+          button.textContent = originalLabel;
+        }
+      }
+
+      async function changeAcademicClassStatus(
+        classId,
+        action
+      ) {
+        const isArchive = action === "archive";
+
+        const confirmed = window.confirm(
+          isArchive
+            ? "Archive this academic class? Student records and Advisor assignments will be preserved."
+            : "Restore this academic class? It will become available as an active class again."
+        );
+
+        if (!confirmed) {
+          return;
+        }
+
+        try {
+          const result = await companyRequest(
+            "/api/academic-admin/classes/" +
+              encodeURIComponent(classId) +
+              "/" +
+              action,
+            {
+              method: "PATCH"
+            }
+          );
+
+          showAcademicClassMessage(
+            result.message || "Academic class status updated."
+          );
+
+          await loadAcademicClasses();
+        } catch (error) {
+          showAcademicClassMessage(
+            error.message || "Unable to update academic class status.",
+            "error"
+          );
+        }
+      }
+
+      async function deleteAcademicClass(classId) {
+        const confirmed = window.confirm(
+          "PERMANENTLY DELETE this archived academic class? " +
+          "This cannot be undone. Classes with student records or " +
+          "other linked records cannot be deleted."
+        );
+
+        if (!confirmed) {
+          return;
+        }
+
+        try {
+          const result = await companyRequest(
+            "/api/academic-admin/classes/" +
+              encodeURIComponent(classId) +
+              "/delete",
+            {
+              method: "DELETE"
+            }
+          );
+
+          showAcademicClassMessage(
+            result.message || "Academic class permanently deleted."
+          );
+
+          await loadAcademicClasses();
+        } catch (error) {
+          showAcademicClassMessage(
+            error.message ||
+              "Unable to delete academic class. Linked records may exist.",
+            "error"
+          );
+        }
+      }
+
+      academicClassForm.addEventListener(
+        "submit",
+        async function (event) {
+          event.preventDefault();
+
+          const classId = document.getElementById(
+            "academicClassId"
+          ).value;
+
+          const payload = {
+            course: document.getElementById(
+              "academicCourse"
+            ).value.trim(),
+
+            branch: document.getElementById(
+              "academicBranch"
+            ).value.trim(),
+
+            section: document.getElementById(
+              "academicSection"
+            ).value.trim(),
+
+            admission_year: Number(
+              document.getElementById(
+                "academicAdmissionYear"
+              ).value
+            )
+          };
+
+          if (
+            !Number.isInteger(payload.admission_year) ||
+            payload.admission_year < 1900 ||
+            payload.admission_year > 2100
+          ) {
+            showAcademicClassMessage(
+              "Enter a valid admission year.",
+              "error"
+            );
+            return;
+          }
+
+          const method = classId ? "PUT" : "POST";
+
+          const endpoint = classId
+            ? "/api/academic-admin/classes/" +
+              encodeURIComponent(classId)
+            : "/api/academic-admin/classes";
+
+          academicClassSubmitButton.disabled = true;
+          academicClassSubmitButton.textContent =
+            classId ? "Updating..." : "Creating...";
+
+          try {
+            const result = await companyRequest(
+              endpoint,
+              {
+                method: method,
+                headers: {
+                  "Content-Type": "application/json"
+                },
+                body: JSON.stringify(payload)
+              }
+            );
+
+            resetAcademicClassForm();
+
+            showAcademicClassMessage(
+              result.message || "Academic class saved successfully."
+            );
+
+            academicClassFilter.value = "active";
+            await loadAcademicClasses();
+          } catch (error) {
+            showAcademicClassMessage(
+              error.message || "Unable to save academic class.",
+              "error"
+            );
+          } finally {
+            academicClassSubmitButton.disabled = false;
+            academicClassSubmitButton.textContent =
+              document.getElementById("academicClassId").value
+                ? "Update Academic Class"
+                : "Create Academic Class";
+          }
+        }
+      );
+
+      cancelAcademicClassEdit.addEventListener(
+        "click",
+        function () {
+          resetAcademicClassForm();
+          showAcademicClassMessage("Editing cancelled.");
+        }
+      );
+
+      academicClassFilter.addEventListener(
+        "change",
+        loadAcademicClasses
+      );
+
+      document
+        .getElementById("refreshAcademicClasses")
+        .addEventListener("click", loadAcademicClasses);
+
+      loadAcademicClasses();
+
+      // =============================================================
+
+
+      // ================= CHAIRPERSON ACCOUNT MANAGEMENT =================
+
+      const chairpersonCreateForm = document.getElementById(
+        "chairpersonCreateForm"
+      );
+
+      const chairpersonCreateButton = document.getElementById(
+        "chairpersonCreateButton"
+      );
+
+      const chairpersonAccountList = document.getElementById(
+        "chairpersonAccountList"
+      );
+
+      const chairpersonAdminMessage = document.getElementById(
+        "chairpersonAdminMessage"
+      );
+
+      const chairpersonStatusFilter = document.getElementById(
+        "chairpersonStatusFilter"
+      );
+
+      function showChairpersonAdminMessage(
+        message,
+        type = "success"
+      ) {
+        chairpersonAdminMessage.textContent = message;
+        chairpersonAdminMessage.className =
+          "company-message " + type;
+      }
+
+      function chairpersonAdminDate(value) {
+        if (!value) {
+          return "Not recorded";
+        }
+
+        const date = new Date(value);
+
+        if (Number.isNaN(date.getTime())) {
+          return "Not recorded";
+        }
+
+        return date.toLocaleString();
+      }
+
+      function chairpersonAdminText(
+        parent,
+        tagName,
+        text,
+        className = ""
+      ) {
+        const element = document.createElement(tagName);
+        element.textContent = text;
+
+        if (className) {
+          element.className = className;
+        }
+
+        parent.appendChild(element);
+        return element;
+      }
+
+      function createChairpersonActionButton(
+        label,
+        action,
+        chairpersonId,
+        style = ""
+      ) {
+        const button = document.createElement("button");
+
+        button.type = "button";
+        button.textContent = label;
+        button.className =
+          "company-action advisor-admin-action";
+
+        if (style) {
+          button.classList.add(style);
+        }
+
+        button.addEventListener("click", () => {
+          runChairpersonAccountAction(
+            chairpersonId,
+            action,
+            button
+          );
+        });
+
+        return button;
+      }
+
+      function renderChairpersonAccount(account) {
+        const card = document.createElement("article");
+
+        card.className =
+          "company-item advisor-account-card chairperson-account-card";
+
+        if (account.is_primary) {
+          card.classList.add("is-primary");
+        }
+
+        chairpersonAdminText(
+          card,
+          "h3",
+          account.name || "Unnamed Chairperson"
+        );
+
+        chairpersonAdminText(
+          card,
+          "p",
+          "Email: " + (account.email || "Not available")
+        );
+
+        const status = String(
+          account.account_status || "unknown"
+        ).toLowerCase();
+
+        chairpersonAdminText(
+          card,
+          "span",
+          status,
+          "advisor-account-status " + status
+        );
+
+        if (account.is_primary) {
+          chairpersonAdminText(
+            card,
+            "span",
+            "Primary Chairperson",
+            "chairperson-primary-badge"
+          );
+        }
+
+        chairpersonAdminText(
+          card,
+          "p",
+          "Account ID: " + account.id,
+          "advisor-account-meta"
+        );
+
+        chairpersonAdminText(
+          card,
+          "p",
+          "Created: " + chairpersonAdminDate(account.created_at),
+          "advisor-account-meta"
+        );
+
+        if (account.reviewed_by_name) {
+          chairpersonAdminText(
+            card,
+            "p",
+            "Last reviewed by: " + account.reviewed_by_name,
+            "advisor-account-meta"
+          );
+        }
+
+        if (account.reviewed_at) {
+          chairpersonAdminText(
+            card,
+            "p",
+            "Last reviewed: " + chairpersonAdminDate(
+              account.reviewed_at
+            ),
+            "advisor-account-meta"
+          );
+        }
+
+        if (account.rejection_reason) {
+          chairpersonAdminText(
+            card,
+            "p",
+            "Rejection reason: " + account.rejection_reason,
+            "advisor-account-meta"
+          );
+        }
+
+        const actions = document.createElement("div");
+        actions.className = "advisor-account-actions";
+
+        if (status === "pending") {
+          actions.append(
+            createChairpersonActionButton(
+              "Approve",
+              "approve",
+              account.id
+            ),
+            createChairpersonActionButton(
+              "Reject",
+              "reject",
+              account.id,
+              "delete"
+            )
+          );
+        } else if (status === "active") {
+          if (!account.is_primary) {
+            actions.appendChild(
+              createChairpersonActionButton(
+                "Set as Primary",
+                "primary",
+                account.id
+              )
+            );
+          }
+
+          actions.append(
+            createChairpersonActionButton(
+              "Deactivate",
+              "deactivate",
+              account.id,
+              "delete"
+            ),
+            createChairpersonActionButton(
+              "Resend Setup Email",
+              "setup-email",
+              account.id,
+              "cancel"
+            )
+          );
+        } else if (status === "deactivated") {
+          actions.append(
+            createChairpersonActionButton(
+              "Reactivate",
+              "reactivate",
+              account.id
+            ),
+            createChairpersonActionButton(
+              "Delete",
+              "delete",
+              account.id,
+              "delete"
+            )
+          );
+        }
+
+        if (actions.children.length > 0) {
+          card.appendChild(actions);
+        }
+
+        return card;
+      }
+
+      async function loadChairpersonAccounts() {
+        chairpersonAccountList.replaceChildren();
+
+        const loading = document.createElement("p");
+        loading.className = "loading";
+        loading.textContent = "Loading Chairperson accounts...";
+
+        chairpersonAccountList.appendChild(loading);
+
+        try {
+          const selectedStatus = chairpersonStatusFilter.value;
+
+          const result = await companyRequest(
+            "/api/academic-admin/chairpersons?status=" +
+              encodeURIComponent(selectedStatus)
+          );
+
+          chairpersonAccountList.replaceChildren();
+
+          // The Chairperson API returns the collection as "chairpersons".
+          const accounts = Array.isArray(result.chairpersons)
+            ? result.chairpersons
+            : [];
+
+          if (accounts.length === 0) {
+            chairpersonAdminText(
+              chairpersonAccountList,
+              "p",
+              "No Chairperson accounts found for this filter."
+            );
+            return;
+          }
+
+          accounts.forEach((account) => {
+            chairpersonAccountList.appendChild(
+              renderChairpersonAccount(account)
+            );
+          });
+        } catch (error) {
+          chairpersonAccountList.replaceChildren();
+
+          chairpersonAdminText(
+            chairpersonAccountList,
+            "p",
+            error.message || "Unable to load Chairperson accounts.",
+            "error"
+          );
+        }
+      }
+
+      async function runChairpersonAccountAction(
+        chairpersonId,
+        action,
+        button
+      ) {
+        const actionLabels = {
+          approve: "Chairperson approved.",
+          reject: "Chairperson account rejected.",
+          deactivate: "Chairperson account deactivated.",
+          reactivate: "Chairperson account reactivated.",
+          "setup-email": "Chairperson setup email sent.",
+          primary: "Primary Chairperson updated.",
+          delete: "Chairperson account permanently deleted."
+        };
+
+        let requestBody = null;
+
+        if (action === "reject") {
+          const reason = window.prompt(
+            "Enter the reason for rejecting this Chairperson account:"
+          );
+
+          if (reason === null) {
+            return;
+          }
+
+          requestBody = {
+            reason: reason.trim()
+          };
+        }
+
+        if (action === "deactivate") {
+          const confirmed = window.confirm(
+            "Deactivate this Chairperson account? " +
+            "Existing records will be preserved. " +
+            "If this is the primary Chairperson, the primary " +
+            "designation will be cleared."
+          );
+
+          if (!confirmed) {
+            return;
+          }
+        }
+
+        if (action === "primary") {
+          const confirmed = window.confirm(
+            "Designate this active account as the institution's " +
+            "primary Chairperson? This replaces the current primary selection."
+          );
+
+          if (!confirmed) {
+            return;
+          }
+        }
+
+        if (action === "approve") {
+          const confirmed = window.confirm(
+            "Approve this Chairperson account and send its password " +
+            "setup email to the registered address?"
+          );
+
+          if (!confirmed) {
+            return;
+          }
+        }
+
+        if (action === "delete") {
+          const confirmed = window.confirm(
+            "PERMANENTLY DELETE this deactivated Chairperson account? " +
+            "This action cannot be undone. Deletion will be blocked if " +
+            "any database records reference this account."
+          );
+
+          if (!confirmed) {
+            return;
+          }
+        }
+
+        const originalLabel = button.textContent;
+
+        button.disabled = true;
+        button.textContent = "Please wait...";
+
+        try {
+          const result = await companyRequest(
+            "/api/academic-admin/chairpersons/" +
+              encodeURIComponent(chairpersonId) +
+              "/" +
+              action,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json"
+              },
+              ...(requestBody !== null
+                ? {
+                    body: JSON.stringify(requestBody)
+                  }
+                : {})
+            }
+          );
+
+          if (
+            (action === "approve" || action === "setup-email") &&
+            result.email_sent === false
+          ) {
+            showChairpersonAdminMessage(
+              result.message ||
+                "The account was updated, but the setup email could not be sent. Check the email configuration and recipient address.",
+              "error"
+            );
+          } else {
+            showChairpersonAdminMessage(
+              result.message ||
+                actionLabels[action] ||
+                "Chairperson account updated."
+            );
+          }
+
+          await loadChairpersonAccounts();
+        } catch (error) {
+          showChairpersonAdminMessage(
+            error.message ||
+              "Unable to update Chairperson account.",
+            "error"
+          );
+
+          button.disabled = false;
+          button.textContent = originalLabel;
+        }
+      }
+
+      chairpersonCreateForm.addEventListener(
+        "submit",
+        async function (event) {
+          event.preventDefault();
+
+          const name = document.getElementById(
+            "chairpersonName"
+          ).value.trim();
+
+          const email = document.getElementById(
+            "chairpersonEmail"
+          ).value.trim();
+
+          chairpersonCreateButton.disabled = true;
+          chairpersonCreateButton.textContent = "Creating...";
+
+          try {
+            const result = await companyRequest(
+              "/api/academic-admin/chairpersons",
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                  name: name,
+                  email: email
+                })
+              }
+            );
+
+            chairpersonCreateForm.reset();
+
+            showChairpersonAdminMessage(
+              result.message ||
+                "Chairperson account created successfully."
+            );
+
+            chairpersonStatusFilter.value = "pending";
+
+            await loadChairpersonAccounts();
+          } catch (error) {
+            showChairpersonAdminMessage(
+              error.message ||
+                "Unable to create Chairperson account.",
+              "error"
+            );
+          } finally {
+            chairpersonCreateButton.disabled = false;
+            chairpersonCreateButton.textContent =
+              "Create Pending Chairperson";
+          }
+        }
+      );
+
+      chairpersonStatusFilter.addEventListener(
+        "change",
+        loadChairpersonAccounts
+      );
+
+      document
+        .getElementById("refreshChairpersonAccounts")
+        .addEventListener("click", loadChairpersonAccounts);
+
+      loadChairpersonAccounts();
+
+      // =============================================================
+
+
     </script>
   </body>
 </html>

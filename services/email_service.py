@@ -42,3 +42,49 @@ def send_password_reset_email(recipient, reset_url):
             smtp.login(username, password)
 
         smtp.send_message(message)
+
+
+def send_account_setup_email(
+    recipient, setup_url, expiry_minutes, account_label="Advisor"
+):
+    """Send an approved Advisor a secure password setup link."""
+    config = current_app.config
+
+    mail_server = config.get("MAIL_SERVER")
+    mail_port = config.get("MAIL_PORT")
+    sender = config.get("MAIL_DEFAULT_SENDER")
+    username = config.get("MAIL_USERNAME")
+    password = "".join((config.get("MAIL_PASSWORD") or "").split())
+    use_tls = config.get("MAIL_USE_TLS", True)
+
+    if not mail_server or not sender or not mail_port:
+        raise RuntimeError("SMTP email settings are incomplete.")
+
+    message = EmailMessage()
+    message["Subject"] = f"Smart Campus Hub - {account_label} Account Setup"
+    message["From"] = sender
+    message["To"] = recipient
+
+    message.set_content(
+        "Hello,\n\n"
+        f"Your Smart Campus Hub {account_label} account has been approved.\n\n"
+        "Use the secure link below to create your password:\n"
+        f"{setup_url}\n\n"
+        f"This link expires in {expiry_minutes} minutes "
+        "and can only be used once.\n\n"
+        "If you were not expecting this invitation, contact your "
+        "institution's Coordinator.\n\n"
+        "Smart Campus Hub Support"
+    )
+
+    with smtplib.SMTP(mail_server, mail_port, timeout=15) as smtp:
+        smtp.ehlo()
+
+        if use_tls:
+            smtp.starttls()
+            smtp.ehlo()
+
+        if username:
+            smtp.login(username, password)
+
+        smtp.send_message(message)

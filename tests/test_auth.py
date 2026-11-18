@@ -252,7 +252,8 @@ class StudentDashboardTests(unittest.TestCase):
             {
                 'id': 1,
                 'role': 'student',
-                'name': 'Test Student'
+                'name': 'Test Student',
+                'account_status': 'active'
             }
         )()
 
