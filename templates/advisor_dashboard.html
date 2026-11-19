@@ -310,22 +310,49 @@
 
     <div id="message" class="message" role="status" aria-live="polite"></div>
 
+    <section class="panel">
+        <h3>Pending Student Registrations</h3>
+        <p>Review verified student registrations from your assigned classes.</p>
+        <div style="margin:12px 0;">
+            <button class="neutral" id="refreshStudentsButton" type="button">
+                Refresh Student Registrations
+            </button>
+        </div>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Student</th>
+                        <th>Register Number</th>
+                        <th>Class</th>
+                        <th>Email</th>
+                        <th>Semester</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="studentRegistrationRows">
+                    <tr><td colspan="6" class="empty">Loading registrations...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
     <section class="stats">
         <div class="stat">
             <div class="stat-label">Assigned grievances</div>
-            <div class="stat-value" id="totalCount">—</div>
+            <div class="stat-value" id="totalCount">â€”</div>
         </div>
         <div class="stat">
             <div class="stat-label">Awaiting review</div>
-            <div class="stat-value" id="reviewCount">—</div>
+            <div class="stat-value" id="reviewCount">â€”</div>
         </div>
         <div class="stat">
             <div class="stat-label">In progress</div>
-            <div class="stat-value" id="progressCount">—</div>
+            <div class="stat-value" id="progressCount">â€”</div>
         </div>
         <div class="stat">
             <div class="stat-label">Resolved</div>
-            <div class="stat-value" id="resolvedCount">—</div>
+            <div class="stat-value" id="resolvedCount">â€”</div>
         </div>
     </section>
 
@@ -376,7 +403,7 @@
                     </tr>
                 </thead>
                 <tbody id="grievanceRows">
-                    <tr><td colspan="6" class="empty">Loading grievances…</td></tr>
+                    <tr><td colspan="6" class="empty">Loading grievancesâ€¦</td></tr>
                 </tbody>
             </table>
         </div>
@@ -397,7 +424,7 @@
     <div id="detailDescription" class="detail-text"></div>
     <div id="detailLocation" class="small"></div>
     <h4>Update history</h4>
-    <div id="historyContent">Loading history…</div>
+    <div id="historyContent">Loading historyâ€¦</div>
 </dialog>
 
 <script>
@@ -515,14 +542,14 @@
 
             const titleCell = document.createElement("td");
             titleCell.appendChild(makeElement(
-                "div", `#${item.id} · ${item.title}`, "title-cell"
+                "div", `#${item.id} Â· ${item.title}`, "title-cell"
             ));
             titleCell.appendChild(makeElement(
                 "div", item.description || "No description provided.", "description"
             ));
             row.appendChild(titleCell);
 
-            row.appendChild(makeElement("td", item.category || "—"));
+            row.appendChild(makeElement("td", item.category || "â€”"));
 
             const priority = item.priority || "Medium";
             const priorityClass = priority === "High" ? "priority-high"
@@ -538,7 +565,7 @@
 
             const created = item.created_at
                 ? new Date(item.created_at).toLocaleString()
-                : "—";
+                : "â€”";
             row.appendChild(makeElement("td", created));
 
             const actionsCell = document.createElement("td");
@@ -600,14 +627,14 @@
     }
 
     async function openHistory(item) {
-        $("detailTitle").textContent = `#${item.id} · ${item.title}`;
+        $("detailTitle").textContent = `#${item.id} Â· ${item.title}`;
         $("detailMeta").textContent =
-            `${item.category || "Uncategorised"} · ${item.priority || "Medium"} · ${item.status}`;
+            `${item.category || "Uncategorised"} Â· ${item.priority || "Medium"} Â· ${item.status}`;
         $("detailDescription").textContent =
             item.description || "No description provided.";
         $("detailLocation").textContent =
             item.location ? `Location: ${item.location}` : "";
-        $("historyContent").textContent = "Loading history…";
+        $("historyContent").textContent = "Loading historyâ€¦";
         $("detailDialog").showModal();
 
         try {
@@ -628,7 +655,7 @@
             history.forEach(entry => {
                 const card = makeElement("div", undefined, "history-item");
                 const transition = entry.old_status
-                    ? `${entry.old_status} → ${entry.new_status}`
+                    ? `${entry.old_status} â†’ ${entry.new_status}`
                     : `Status: ${entry.new_status}`;
 
                 card.appendChild(makeElement("strong", transition));
@@ -652,6 +679,132 @@
             $("historyContent").replaceChildren(
                 makeElement("div", error.message, "message show error")
             );
+        }
+    }
+
+    async function loadStudentRegistrations() {
+        const rows = $("studentRegistrationRows");
+        rows.replaceChildren();
+
+        try {
+            const data = await requestJSON(
+                "/api/academic-admin/students/registrations"
+            );
+
+            if (!Array.isArray(data.students) || !data.students.length) {
+                const row = document.createElement("tr");
+                const cell = makeElement(
+                    "td",
+                    "No verified student registrations are awaiting review.",
+                    "empty"
+                );
+                cell.colSpan = 6;
+                row.appendChild(cell);
+                rows.appendChild(row);
+                return;
+            }
+
+            data.students.forEach(student => {
+                const row = document.createElement("tr");
+
+                const classInfo = student.academic_class;
+                const className = classInfo
+                    ? `${classInfo.course} - ${classInfo.branch} - ${classInfo.section}`
+                    : "Class unavailable";
+
+                [
+                    student.name,
+                    student.register_number,
+                    className,
+                    student.email,
+                    student.semester ?? "Not provided"
+                ].forEach(value => {
+                    row.appendChild(makeElement("td", String(value)));
+                });
+
+                const actionCell = document.createElement("td");
+
+                const approveButton = makeElement(
+                    "button", "Approve", "primary"
+                );
+                approveButton.type = "button";
+
+                const rejectButton = makeElement(
+                    "button", "Reject", "neutral"
+                );
+                rejectButton.type = "button";
+                rejectButton.style.marginLeft = "6px";
+
+                approveButton.addEventListener("click", async () => {
+                    if (!confirm(`Approve ${student.name}'s registration?`)) {
+                        return;
+                    }
+
+                    approveButton.disabled = true;
+                    rejectButton.disabled = true;
+
+                    try {
+                        const result = await requestJSON(
+                            `/api/academic-admin/students/${student.student_id}/approve`,
+                            { method: "POST", body: JSON.stringify({}) }
+                        );
+
+                        showMessage(result.message);
+                        await loadStudentRegistrations();
+                    } catch (error) {
+                        showMessage(error.message, "error");
+                        approveButton.disabled = false;
+                        rejectButton.disabled = false;
+                    }
+                });
+
+                rejectButton.addEventListener("click", async () => {
+                    const reason = prompt(
+                        `Optional rejection reason for ${student.name}:`
+                    );
+
+                    if (reason === null) return;
+
+                    if (reason.length > 500) {
+                        showMessage(
+                            "Rejection reason must be 500 characters or fewer.",
+                            "error"
+                        );
+                        return;
+                    }
+
+                    approveButton.disabled = true;
+                    rejectButton.disabled = true;
+
+                    try {
+                        const result = await requestJSON(
+                            `/api/academic-admin/students/${student.student_id}/reject`,
+                            {
+                                method: "POST",
+                                body: JSON.stringify({ reason })
+                            }
+                        );
+
+                        showMessage(result.message);
+                        await loadStudentRegistrations();
+                    } catch (error) {
+                        showMessage(error.message, "error");
+                        approveButton.disabled = false;
+                        rejectButton.disabled = false;
+                    }
+                });
+
+                actionCell.append(approveButton, rejectButton);
+                row.appendChild(actionCell);
+                rows.appendChild(row);
+            });
+
+        } catch (error) {
+            const row = document.createElement("tr");
+            const cell = makeElement("td", error.message, "empty");
+            cell.colSpan = 6;
+            row.appendChild(cell);
+            rows.appendChild(row);
         }
     }
 
@@ -686,11 +839,12 @@
         }
     }
 
-    $("refreshButton").addEventListener("click", () => loadData(true));
+    $("refreshButton").addEventListener("click", () => { loadData(true); loadStudentRegistrations(); });
     $("searchInput").addEventListener("input", renderGrievances);
     $("statusFilter").addEventListener("change", renderGrievances);
     $("priorityFilter").addEventListener("change", renderGrievances);
 
+    $("refreshStudentsButton").addEventListener("click", loadStudentRegistrations);
     $("clearFilters").addEventListener("click", () => {
         $("searchInput").value = "";
         $("statusFilter").value = "";
@@ -703,6 +857,7 @@
     });
 
     loadData();
+    loadStudentRegistrations();
 })();
 </script>
 </body>

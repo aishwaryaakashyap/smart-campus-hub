@@ -319,3 +319,18 @@ dialog::backdrop {
         transform: none;
     }
 }
+
+/* Student registration review panel */
+#studentRegistrationRows button {
+    margin-top: 3px;
+    margin-bottom: 3px;
+}
+
+#studentRegistrationRows td {
+    vertical-align: middle;
+}
+
+#studentRegistrationRows button:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}

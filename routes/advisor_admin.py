@@ -9,9 +9,10 @@ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from extensions import db
 from services.record_deletion_guard import find_referencing_records
-from models import PasswordResetToken, User
+from models import AcademicClass, PasswordResetToken, Student, User
 from routes.academic_admin import require_coordinator
 from services.email_service import send_account_setup_email
+from services.notifications import create_notification
 
 
 advisor_admin_bp = Blueprint("advisor_admin", __name__)
@@ -592,3 +593,280 @@ def delete_advisor_account(advisor_id):
         return jsonify({
             "error": "A database error prevented Advisor deletion."
         }), 500
+
+
+
+# ============================================================
+# Student registration review by assigned Advisors
+# ============================================================
+
+def require_current_advisor():
+    """Validate the session against the current active Advisor account."""
+    user_id = session.get("user_id")
+
+    if not user_id:
+        return None, (jsonify({"error": "Not logged in"}), 401)
+
+    session_role = session.get("role")
+    advisor = db.session.get(User, user_id)
+
+    if not advisor or advisor.role != session_role:
+        session.clear()
+        return None, (jsonify({"error": "Not logged in"}), 401)
+
+    if advisor.account_status != User.STATUS_ACTIVE:
+        session.clear()
+        return None, (jsonify({"error": "Account is not active"}), 401)
+
+    if advisor.role != User.ROLE_ADVISOR:
+        return None, (
+            jsonify({"error": "Only Advisors can review student registrations"}),
+            403
+        )
+
+    return advisor, None
+
+
+def get_assigned_pending_student(student_id, advisor_id):
+    """Find a student only if their active class belongs to this Advisor."""
+    return (
+        db.session.query(Student)
+        .join(User, Student.user_id == User.id)
+        .join(
+            AcademicClass,
+            Student.academic_class_id == AcademicClass.id
+        )
+        .filter(
+            Student.id == student_id,
+            AcademicClass.advisor_user_id == advisor_id,
+            AcademicClass.is_active.is_(True)
+        )
+        .first()
+    )
+
+
+def serialize_student_registration(student):
+    """Return safe student registration details for the Advisor dashboard."""
+    user = student.user
+    academic_class = student.academic_class
+
+    return {
+        "student_id": student.id,
+        "user_id": user.id,
+        "name": user.name,
+        "email": user.email,
+        "register_number": student.register_number,
+        "course": student.course,
+        "branch": student.branch,
+        "semester": student.semester,
+        "cgpa": student.cgpa,
+        "phone": student.phone,
+        "graduation_year": student.graduation_year,
+        "academic_class": {
+            "id": academic_class.id,
+            "course": academic_class.course,
+            "branch": academic_class.branch,
+            "section": academic_class.section,
+            "admission_year": academic_class.admission_year
+        },
+        "registered_at": (
+            user.created_at.isoformat()
+            if user.created_at else None
+        ),
+        "email_verified_at": (
+            user.email_verified_at.isoformat()
+            if user.email_verified_at else None
+        )
+    }
+
+
+@advisor_admin_bp.route(
+    "/students/registrations",
+    methods=["GET"]
+)
+def list_pending_student_registrations():
+    """List verified pending students in this Advisor's active classes."""
+    advisor, auth_error = require_current_advisor()
+
+    if auth_error:
+        return auth_error
+
+    students = (
+        db.session.query(Student)
+        .join(User, Student.user_id == User.id)
+        .join(
+            AcademicClass,
+            Student.academic_class_id == AcademicClass.id
+        )
+        .filter(
+            AcademicClass.advisor_user_id == advisor.id,
+            AcademicClass.is_active.is_(True),
+            User.role == User.ROLE_STUDENT,
+            User.account_status == User.STATUS_PENDING,
+            User.email_verified_at.isnot(None)
+        )
+        .order_by(User.created_at.asc(), User.id.asc())
+        .all()
+    )
+
+    return jsonify({
+        "students": [
+            serialize_student_registration(student)
+            for student in students
+        ],
+        "total": len(students)
+    }), 200
+
+
+@advisor_admin_bp.route(
+    "/students/<int:student_id>/approve",
+    methods=["POST"]
+)
+def approve_student_registration(student_id):
+    """Approve a verified student assigned to the current Advisor."""
+    advisor, auth_error = require_current_advisor()
+
+    if auth_error:
+        return auth_error
+
+    student = get_assigned_pending_student(student_id, advisor.id)
+
+    if not student:
+        return jsonify({
+            "error": "Student registration not found in your assigned classes"
+        }), 404
+
+    user = student.user
+
+    if user.role != User.ROLE_STUDENT:
+        return jsonify({"error": "This account is not a student"}), 409
+
+    if user.account_status != User.STATUS_PENDING:
+        return jsonify({
+            "error": "Only pending student registrations can be approved"
+        }), 409
+
+    if not user.email_verified_at:
+        return jsonify({
+            "error": "Student must verify their email before approval"
+        }), 409
+
+    user.account_status = User.STATUS_ACTIVE
+    user.reviewed_by_user_id = advisor.id
+    user.reviewed_at = datetime.now(timezone.utc).replace(tzinfo=None)
+    user.rejection_reason = None
+
+    try:
+        create_notification(
+            user.id,
+            "Student registration approved",
+            "Your Smart Campus Hub registration has been approved. "
+            "You can now log in to your account.",
+            "student_registration"
+        )
+
+        db.session.commit()
+
+    except SQLAlchemyError:
+        db.session.rollback()
+        return jsonify({
+            "error": "Unable to approve student registration at this time"
+        }), 500
+
+    return jsonify({
+        "message": "Student registration approved successfully",
+        "student": {
+            "student_id": student.id,
+            "name": user.name,
+            "account_status": user.account_status
+        }
+    }), 200
+
+
+@advisor_admin_bp.route(
+    "/students/<int:student_id>/reject",
+    methods=["POST"]
+)
+def reject_student_registration(student_id):
+    """Reject a verified student assigned to the current Advisor."""
+    advisor, auth_error = require_current_advisor()
+
+    if auth_error:
+        return auth_error
+
+    data = request.get_json(silent=True)
+
+    if data is None:
+        data = {}
+
+    if not isinstance(data, dict):
+        return jsonify({"error": "A valid JSON object is required"}), 400
+
+    reason = data.get("reason")
+
+    if reason is not None and not isinstance(reason, str):
+        return jsonify({"error": "Rejection reason must be text"}), 400
+
+    if reason is not None:
+        reason = reason.strip() or None
+
+        if reason and len(reason) > 500:
+            return jsonify({
+                "error": "Rejection reason must be 500 characters or fewer"
+            }), 400
+
+    student = get_assigned_pending_student(student_id, advisor.id)
+
+    if not student:
+        return jsonify({
+            "error": "Student registration not found in your assigned classes"
+        }), 404
+
+    user = student.user
+
+    if user.role != User.ROLE_STUDENT:
+        return jsonify({"error": "This account is not a student"}), 409
+
+    if user.account_status != User.STATUS_PENDING:
+        return jsonify({
+            "error": "Only pending student registrations can be rejected"
+        }), 409
+
+    if not user.email_verified_at:
+        return jsonify({
+            "error": "Student must verify their email before rejection"
+        }), 409
+
+    user.account_status = User.STATUS_REJECTED
+    user.reviewed_by_user_id = advisor.id
+    user.reviewed_at = datetime.now(timezone.utc).replace(tzinfo=None)
+    user.rejection_reason = reason
+
+    try:
+        create_notification(
+            user.id,
+            "Student registration update",
+            (
+                "Your Smart Campus Hub registration was not approved."
+                + (f" Reason: {reason}" if reason else "")
+            ),
+            "student_registration"
+        )
+
+        db.session.commit()
+
+    except SQLAlchemyError:
+        db.session.rollback()
+        return jsonify({
+            "error": "Unable to reject student registration at this time"
+        }), 500
+
+    return jsonify({
+        "message": "Student registration rejected",
+        "student": {
+            "student_id": student.id,
+            "name": user.name,
+            "account_status": user.account_status,
+            "rejection_reason": user.rejection_reason
+        }
+    }), 200

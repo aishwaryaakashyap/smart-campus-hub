@@ -424,6 +424,8 @@ class AdvisorAdminTests(unittest.TestCase):
     def test_pending_account_cannot_log_in(self):
         account = SimpleNamespace(
             account_status="pending",
+            role="advisor",
+            email_verified_at=None,
             check_password=lambda password: True
         )
 

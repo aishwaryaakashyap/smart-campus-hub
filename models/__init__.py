@@ -20,3 +20,5 @@ from .password_reset_token import PasswordResetToken
 from .academic_class import AcademicClass
 
 from .chairperson_settings import ChairpersonSettings
+
+from .student_registration_otp import StudentRegistrationOTP
