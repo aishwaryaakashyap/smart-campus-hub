@@ -53,6 +53,7 @@ class CoordinatorGrievanceUITests(unittest.TestCase):
         coordinator.id = 22
         coordinator.name = "Test Coordinator"
         coordinator.role = "coordinator"
+        coordinator.account_status = "active"
 
         with patch(
             "app.db.session.get",

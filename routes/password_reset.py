@@ -210,7 +210,10 @@ def reset_password():
 
     user = db.session.get(User, reset_record.user_id)
 
-    if user is None:
+    if (
+        user is None
+        or user.account_status != User.STATUS_ACTIVE
+    ):
         return jsonify({"error": INVALID_TOKEN_MESSAGE}), 400
 
     try:

@@ -52,6 +52,12 @@ class Config:
 
     PASSWORD_RESET_TOKEN_MINUTES = 15
 
+    # Student email OTP settings
+    STUDENT_OTP_MINUTES = 10
+    STUDENT_OTP_MAX_ATTEMPTS = 5
+    STUDENT_OTP_RESEND_SECONDS = 60
+    STUDENT_OTP_MAX_RESENDS_PER_HOUR = 5
+
 
 def validate_production_config(config):
     """Reject unsafe or incomplete settings before production startup."""

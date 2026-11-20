@@ -266,6 +266,7 @@ class GrievanceNotificationIntegrationTests(unittest.TestCase):
         advisor = MagicMock()
         advisor.id = 303
         advisor.role = 'advisor'
+        advisor.account_status = 'active'
 
         with patch(
             'routes.grievance.db.session.get',

@@ -37,6 +37,17 @@ def require_session_role(allowed_roles, forbidden_message):
         session.clear()
         return None, None, (jsonify({'error': 'Not logged in'}), 401)
 
+    if getattr(
+        user,
+        'account_status',
+        User.STATUS_ACTIVE
+    ) != User.STATUS_ACTIVE:
+        session.clear()
+        return None, None, (
+            jsonify({'error': 'Account is not active'}),
+            401
+        )
+
     if session_role not in allowed_roles:
         return None, None, (
             jsonify({'error': forbidden_message}),
@@ -520,9 +531,13 @@ def assign_grievance(grievance_id):
 
     advisor = db.session.get(User, advisor_id)
 
-    if not advisor or advisor.role != 'advisor':
+    if (
+        not advisor
+        or advisor.role != User.ROLE_ADVISOR
+        or advisor.account_status != User.STATUS_ACTIVE
+    ):
         return jsonify({
-            'error': 'The selected user is not an advisor'
+            'error': 'The selected user is not an active Advisor'
         }), 400
 
     try:
@@ -707,7 +722,10 @@ def get_grievance_advisors():
     if error:
         return error
 
-    advisors = User.query.filter_by(role='advisor').order_by(
+    advisors = User.query.filter_by(
+        role=User.ROLE_ADVISOR,
+        account_status=User.STATUS_ACTIVE
+    ).order_by(
         User.name.asc()
     ).all()
 

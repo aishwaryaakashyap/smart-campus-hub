@@ -1,0 +1,380 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>Student Registration | Smart Campus Hub</title>
+    <style>
+        * { box-sizing: border-box; font-family: Arial, sans-serif; }
+        body {
+            margin: 0;
+            padding: 30px 15px;
+            background: #f7f5f5;
+            color: #351421;
+        }
+        .container {
+            max-width: 760px;
+            margin: auto;
+            padding: 32px;
+            background: white;
+            border-radius: 14px;
+            box-shadow: 0 8px 30px rgba(65,20,35,.09);
+        }
+        h1 { color: #641b35; margin-top: 0; }
+        .subtitle { color: #777; line-height: 1.6; }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 16px;
+        }
+        .field { margin-bottom: 16px; }
+        .field.full { grid-column: 1 / -1; }
+        label {
+            display: block;
+            margin-bottom: 7px;
+            font-weight: 600;
+        }
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #d9cbd0;
+            border-radius: 7px;
+            font-size: 15px;
+        }
+        input:focus, select:focus {
+            outline: 2px solid #d7a9ba;
+            border-color: #762642;
+        }
+        button {
+            padding: 12px 20px;
+            border: 0;
+            border-radius: 7px;
+            background: #762642;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        button:disabled { opacity: .6; cursor: not-allowed; }
+        .secondary { background: #f0e2e8; color: #762642; }
+        .message {
+            display: none;
+            margin: 16px 0;
+            padding: 12px;
+            border-radius: 7px;
+            line-height: 1.5;
+        }
+        .message.show { display: block; }
+        .success { background: #e7f5eb; color: #216b39; }
+        .error { background: #fbe9e9; color: #a12626; }
+        .otp-panel {
+            margin-top: 25px;
+            padding: 22px;
+            background: #fbf5f7;
+            border: 1px solid #ead8df;
+            border-radius: 10px;
+        }
+        .hidden { display: none; }
+        .actions { display: flex; gap: 10px; flex-wrap: wrap; }
+        a { color: #762642; }
+        .footer { margin-top: 24px; color: #777; }
+        @media(max-width: 600px) {
+            .grid { grid-template-columns: 1fr; }
+            .container { padding: 22px; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>Student Registration</h1>
+    <p class="subtitle">
+        Create your Smart Campus Hub account. Verify your email first.
+        Your assigned Advisor must then approve your registration.
+    </p>
+
+    <div id="message" class="message" role="status" aria-live="polite"></div>
+
+    <form id="registrationForm">
+        <div class="grid">
+            <div class="field">
+                <label for="name">Full Name *</label>
+                <input id="name" maxlength="100" required>
+            </div>
+
+            <div class="field">
+                <label for="email">Email Address *</label>
+                <input id="email" type="email" maxlength="120" required>
+            </div>
+
+            <div class="field">
+                <label for="password">Password *</label>
+                <input id="password" type="password"
+                       minlength="8" maxlength="128" required>
+            </div>
+
+            <div class="field">
+                <label for="register_number">Register Number *</label>
+                <input id="register_number" maxlength="30" required>
+            </div>
+
+            <div class="field full">
+                <label for="academic_class_id">Academic Class *</label>
+                <select id="academic_class_id" required>
+                    <option value="">Loading classes...</option>
+                </select>
+            </div>
+
+            <div class="field">
+                <label for="semester">Semester</label>
+                <input id="semester" type="number" min="1" max="12">
+            </div>
+
+            <div class="field">
+                <label for="cgpa">CGPA</label>
+                <input id="cgpa" type="number" min="0" max="10"
+                       step="0.01">
+            </div>
+
+            <div class="field">
+                <label for="phone">Phone Number</label>
+                <input id="phone" type="tel" maxlength="15">
+            </div>
+
+            <div class="field">
+                <label for="graduation_year">Graduation Year</label>
+                <input id="graduation_year" type="number"
+                       min="2000" max="2100">
+            </div>
+        </div>
+
+        <button id="registerButton" type="submit">
+            Register and Send OTP
+        </button>
+    </form>
+
+    <section id="otpPanel" class="otp-panel hidden">
+        <h2>Verify Your Email</h2>
+        <p id="otpInfo">
+            Enter the six-digit OTP sent to your email address.
+        </p>
+
+        <div class="field">
+            <label for="otp">Six-digit OTP</label>
+            <input id="otp" inputmode="numeric" maxlength="6"
+                   pattern="[0-9]{6}" placeholder="Enter OTP">
+        </div>
+
+        <div class="actions">
+            <button id="verifyButton" type="button">Verify Email</button>
+            <button id="resendButton" class="secondary" type="button">
+                Resend OTP
+            </button>
+        </div>
+    </section>
+
+    <p class="footer">
+        Already registered?
+        <a href="/api/auth/login-page">Go to Login</a>
+    </p>
+</div>
+
+<script>
+(() => {
+    "use strict";
+
+    const $ = id => document.getElementById(id);
+    const csrfToken = document.querySelector(
+        'meta[name="csrf-token"]'
+    ).content;
+
+    let registrationEmail = "";
+    let resendTimer = null;
+
+    function showMessage(message, type = "success") {
+        const box = $("message");
+        box.textContent = message;
+        box.className = `message show ${type}`;
+    }
+
+    async function apiRequest(url, options = {}) {
+        const response = await fetch(url, {
+            credentials: "same-origin",
+            ...options,
+            headers: {
+                ...(options.body ? {
+                    "Content-Type": "application/json"
+                } : {}),
+                ...(options.method && options.method !== "GET" ? {
+                    "X-CSRFToken": csrfToken
+                } : {}),
+                ...(options.headers || {})
+            }
+        });
+
+        const data = await response.json().catch(() => ({}));
+
+        if (!response.ok) {
+            const error = new Error(
+                data.error || data.message || "Request failed."
+            );
+            error.status = response.status;
+            error.data = data;
+            throw error;
+        }
+
+        return data;
+    }
+
+    async function loadClasses() {
+        try {
+            const data = await apiRequest(
+                "/api/auth/registration-classes"
+            );
+
+            const select = $("academic_class_id");
+            select.replaceChildren();
+
+            const placeholder = document.createElement("option");
+            placeholder.value = "";
+            placeholder.textContent = "Select your class";
+            select.appendChild(placeholder);
+
+            data.classes.forEach(item => {
+                const option = document.createElement("option");
+                option.value = item.id;
+                option.textContent =
+                    `${item.course} - ${item.branch} - Section ${item.section} (${item.admission_year})`;
+                select.appendChild(option);
+            });
+
+            if (!data.classes.length) {
+                showMessage(
+                    "No classes are currently available for registration. Please contact your college administrator.",
+                    "error"
+                );
+            }
+        } catch (error) {
+            $("academic_class_id").replaceChildren();
+            showMessage(error.message, "error");
+        }
+    }
+
+    function showOtpPanel(email, emailSent) {
+        registrationEmail = email;
+        $("otpPanel").classList.remove("hidden");
+        $("otpInfo").textContent = emailSent
+            ? `An OTP was sent to ${email}. It expires in 10 minutes.`
+            : `Registration was saved for ${email}, but the email could not be sent. Use Resend OTP to try again.`;
+
+        $("otpPanel").scrollIntoView({
+            behavior: "smooth",
+            block: "center"
+        });
+    }
+
+    $("registrationForm").addEventListener("submit", async event => {
+        event.preventDefault();
+
+        const button = $("registerButton");
+        button.disabled = true;
+
+        const payload = {
+            name: $("name").value.trim(),
+            email: $("email").value.trim(),
+            password: $("password").value,
+            role: "student",
+            register_number: $("register_number").value.trim(),
+            academic_class_id: $("academic_class_id").value,
+            semester: $("semester").value,
+            cgpa: $("cgpa").value,
+            phone: $("phone").value.trim(),
+            graduation_year: $("graduation_year").value
+        };
+
+        try {
+            const data = await apiRequest("/api/auth/register", {
+                method: "POST",
+                body: JSON.stringify(payload)
+            });
+
+            showMessage(data.message, "success");
+            showOtpPanel(data.email, data.email_sent);
+            $("registrationForm").classList.add("hidden");
+
+        } catch (error) {
+            if (error.status === 503 && error.data?.email) {
+                showMessage(error.data.message, "error");
+                showOtpPanel(error.data.email, false);
+                $("registrationForm").classList.add("hidden");
+            } else {
+                showMessage(error.message, "error");
+            }
+        } finally {
+            button.disabled = false;
+        }
+    });
+
+    $("verifyButton").addEventListener("click", async () => {
+        const otp = $("otp").value.trim();
+
+        if (!/^\d{6}$/.test(otp)) {
+            showMessage("Enter a valid six-digit OTP.", "error");
+            return;
+        }
+
+        $("verifyButton").disabled = true;
+
+        try {
+            const data = await apiRequest(
+                "/api/auth/verify-registration-otp",
+                {
+                    method: "POST",
+                    body: JSON.stringify({
+                        email: registrationEmail,
+                        otp
+                    })
+                }
+            );
+
+            showMessage(
+                data.message +
+                " You can log in after your Advisor approves your account.",
+                "success"
+            );
+
+            $("otpPanel").classList.add("hidden");
+
+        } catch (error) {
+            showMessage(error.message, "error");
+        } finally {
+            $("verifyButton").disabled = false;
+        }
+    });
+
+    $("resendButton").addEventListener("click", async () => {
+        $("resendButton").disabled = true;
+
+        try {
+            const data = await apiRequest(
+                "/api/auth/resend-registration-otp",
+                {
+                    method: "POST",
+                    body: JSON.stringify({
+                        email: registrationEmail
+                    })
+                }
+            );
+
+            showMessage(data.message, "success");
+        } catch (error) {
+            showMessage(error.message, "error");
+        } finally {
+            $("resendButton").disabled = false;
+        }
+    });
+
+    loadClasses();
+})();
+</script>
+</body>
+</html>

@@ -357,6 +357,7 @@ class GrievanceSecurityTests(unittest.TestCase):
         advisor = MagicMock()
         advisor.id = 6
         advisor.role = "advisor"
+        advisor.account_status = "active"
 
         with patch(
             "routes.grievance.db.session.get",

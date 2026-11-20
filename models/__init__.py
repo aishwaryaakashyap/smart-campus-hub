@@ -1,4 +1,3 @@
-
 from .user import User
 from .student import Student
 from .company import Company
@@ -18,3 +17,8 @@ from .grievance_category import GrievanceCategory
 from .grievance import Grievance, GrievanceUpdate, GrievanceEscalation
 from .notification import Notification
 from .password_reset_token import PasswordResetToken
+from .academic_class import AcademicClass
+
+from .chairperson_settings import ChairpersonSettings
+
+from .student_registration_otp import StudentRegistrationOTP
