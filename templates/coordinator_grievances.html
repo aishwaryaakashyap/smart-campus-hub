@@ -76,7 +76,7 @@
 
         .filters {
             display: grid;
-            grid-template-columns: 2fr 1fr 1fr auto;
+            grid-template-columns: 2fr 1fr 1fr 1fr auto;
             gap: 12px;
             align-items: end;
         }
@@ -381,6 +381,14 @@
                     <option>Low</option>
                 </select>
             </div>
+            <div>
+                <label for="assignmentFilter">Assignment</label>
+                <select id="assignmentFilter">
+                    <option value="">All assignments</option>
+                    <option value="unassigned">Unassigned</option>
+                    <option value="assigned">Assigned</option>
+                </select>
+            </div>
             <button id="clearFilters" class="neutral" type="button">Clear Filters</button>
         </div>
     </section>
@@ -546,6 +554,7 @@
         const query = $("searchInput").value.trim().toLowerCase();
         const selectedStatus = $("statusFilter").value;
         const selectedPriority = $("priorityFilter").value;
+        const selectedAssignment = $("assignmentFilter").value;
 
         const filtered = grievances.filter(item => {
             const searchText = [
@@ -555,7 +564,13 @@
 
             return (!query || searchText.includes(query))
                 && (!selectedStatus || item.status === selectedStatus)
-                && (!selectedPriority || item.priority === selectedPriority);
+                && (!selectedPriority || item.priority === selectedPriority)
+                && (
+                    !selectedAssignment
+                    || (selectedAssignment === "unassigned"
+                        ? item.assigned_to == null
+                        : item.assigned_to != null)
+                );
         });
 
         const tbody = $("grievanceRows");
@@ -765,11 +780,13 @@
     $("searchInput").addEventListener("input", renderGrievances);
     $("statusFilter").addEventListener("change", renderGrievances);
     $("priorityFilter").addEventListener("change", renderGrievances);
+    $("assignmentFilter").addEventListener("change", renderGrievances);
 
     $("clearFilters").addEventListener("click", () => {
         $("searchInput").value = "";
         $("statusFilter").value = "";
         $("priorityFilter").value = "";
+        $("assignmentFilter").value = "";
         renderGrievances();
     });
 
