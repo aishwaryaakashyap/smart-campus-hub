@@ -262,6 +262,7 @@ class GrievanceNotificationIntegrationTests(unittest.TestCase):
         grievance = MagicMock()
         grievance.id = 10
         grievance.title = 'Broken classroom fan'
+        grievance.priority = 'Medium'
 
         advisor = MagicMock()
         advisor.id = 303

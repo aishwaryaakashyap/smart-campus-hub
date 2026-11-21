@@ -369,9 +369,7 @@ class GrievanceSecurityTests(unittest.TestCase):
                 grievance.title = "SLA test grievance"
                 grievance.priority = priority
                 grievance.status = "Submitted"
-                grievance.created_at = datetime(
-                    2026, 11, 10, 10, 0, 0
-                )
+                grievance.created_at = datetime(2026, 11, 10, 10, 0, 0)
 
                 with patch(
                     "routes.grievance.Student.query"
@@ -382,8 +380,7 @@ class GrievanceSecurityTests(unittest.TestCase):
                     "routes.grievance.Grievance",
                     return_value=grievance
                 ) as grievance_factory, patch(
-                    "routes.grievance.calculate_sla_due_at",
-                    return_value=expected_deadline
+                    "routes.grievance.calculate_sla_due_at"
                 ) as sla_mock, patch(
                     "routes.grievance.db.session.add"
                 ), patch(
@@ -395,32 +392,27 @@ class GrievanceSecurityTests(unittest.TestCase):
                 ) as user_query, patch(
                     "routes.grievance.create_notification"
                 ):
-                    student_query.filter_by.return_value.first.return_value = (
-                        student
-                    )
+                    student_query.filter_by.return_value.first.return_value = student
                     user_query.filter_by.return_value.all.return_value = []
 
                     response = self.client.post(
                         "/api/grievances/",
                         json={
                             "title": "SLA test grievance",
-                            "description": "Testing priority-based SLA",
+                            "description": "Testing assignment-based SLA",
                             "category_id": 1,
                             "priority": priority
                         }
                     )
 
                 self.assertEqual(response.status_code, 201)
-
-                self.assertEqual(
-                    grievance_factory.call_args.kwargs["sla_due_at"],
-                    expected_deadline
+                self.assertIsNone(
+                    grievance_factory.call_args.kwargs["sla_due_at"]
                 )
+                sla_mock.assert_not_called()
 
-                sla_mock.assert_called_once_with(priority)
 
-
-    def test_assignment_updates_legacy_and_current_handler_fields(self):
+    def test_assignment_updates_handler_and_starts_fresh_sla(self):
         with self.client.session_transaction() as session:
             session["user_id"] = 1
             session["role"] = "coordinator"
@@ -428,16 +420,24 @@ class GrievanceSecurityTests(unittest.TestCase):
         grievance = MagicMock()
         grievance.id = 10
         grievance.title = "Test grievance"
+        grievance.priority = "High"
+        grievance.escalation_level = 1
+        grievance.last_escalated_at = datetime(2026, 11, 10, 10, 0, 0)
 
         advisor = MagicMock()
         advisor.id = 6
         advisor.role = "advisor"
         advisor.account_status = "active"
 
+        expected_deadline = datetime(2026, 11, 14, 10, 0, 0)
+
         with patch(
             "routes.grievance.db.session.get",
             side_effect=[grievance, advisor]
         ), patch(
+            "routes.grievance.calculate_sla_due_at",
+            return_value=expected_deadline
+        ) as sla_mock, patch(
             "routes.grievance.create_notification"
         ) as notification_mock, patch(
             "routes.grievance.db.session.commit"
@@ -449,13 +449,19 @@ class GrievanceSecurityTests(unittest.TestCase):
             )
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.get_json()["message"],
-                         "Grievance assigned successfully")
+        self.assertEqual(
+            response.get_json()["message"],
+            "Grievance assigned successfully"
+        )
 
         self.assertEqual(grievance.assigned_to, 6)
         self.assertEqual(grievance.current_handler_id, 6)
         self.assertEqual(grievance.current_handler_role, "advisor")
+        self.assertEqual(grievance.sla_due_at, expected_deadline)
+        self.assertEqual(grievance.escalation_level, 0)
+        self.assertIsNone(grievance.last_escalated_at)
 
+        sla_mock.assert_called_once_with("High")
         notification_mock.assert_called_once()
         commit_mock.assert_called_once()
 
@@ -602,15 +608,15 @@ class GrievanceSecurityTests(unittest.TestCase):
         commit_mock.assert_not_called()
 
     def test_reopen_grievance_updates_status_sla_and_history(self):
-
         with self.client.session_transaction() as session:
             session["user_id"] = 1
             session["role"] = "student"
+
         student = MagicMock()
         student.id = 1
 
         old_confirmation = datetime(2026, 11, 10, 10, 0, 0)
-        new_deadline = datetime(2026, 11, 12, 10, 0, 0)
+        new_deadline = datetime(2026, 11, 14, 10, 0, 0)
 
         grievance = MagicMock()
         grievance.id = 10
@@ -621,6 +627,8 @@ class GrievanceSecurityTests(unittest.TestCase):
         grievance.assigned_to = 6
         grievance.resolution_confirmed_at = old_confirmation
         grievance.reopen_count = 2
+        grievance.escalation_level = 1
+        grievance.last_escalated_at = old_confirmation
 
         with patch(
             "routes.grievance.require_student",
@@ -657,6 +665,8 @@ class GrievanceSecurityTests(unittest.TestCase):
         self.assertEqual(grievance.sla_due_at, new_deadline)
         self.assertEqual(grievance.current_handler_id, 6)
         self.assertEqual(grievance.current_handler_role, "advisor")
+        self.assertEqual(grievance.escalation_level, 0)
+        self.assertIsNone(grievance.last_escalated_at)
 
         sla_mock.assert_called_once_with("Medium")
 
@@ -671,6 +681,60 @@ class GrievanceSecurityTests(unittest.TestCase):
         add_mock.assert_called_once_with(history_factory.return_value)
         notification_mock.assert_called_once()
         commit_mock.assert_called_once()
+
+
+    def test_reopen_without_assigned_advisor_does_not_start_sla(self):
+        with self.client.session_transaction() as session:
+            session["user_id"] = 1
+            session["role"] = "student"
+
+        student = MagicMock()
+        student.id = 1
+
+        grievance = MagicMock()
+        grievance.id = 11
+        grievance.student_id = 1
+        grievance.title = "Unassigned grievance"
+        grievance.priority = "Low"
+        grievance.status = "Resolved"
+        grievance.assigned_to = None
+        grievance.resolution_confirmed_at = datetime(2026, 11, 10, 10, 0, 0)
+        grievance.reopen_count = 0
+        grievance.escalation_level = 1
+        grievance.last_escalated_at = datetime(2026, 11, 10, 10, 0, 0)
+
+        with patch(
+            "routes.grievance.require_student",
+            return_value=(student, None)
+        ), patch(
+            "routes.grievance.db.session.get",
+            return_value=grievance
+        ), patch(
+            "routes.grievance.calculate_sla_due_at"
+        ) as sla_mock, patch(
+            "routes.grievance.GrievanceUpdate"
+        ), patch(
+            "routes.grievance.db.session.add"
+        ), patch(
+            "routes.grievance.notify_grievance_staff"
+        ), patch(
+            "routes.grievance.db.session.commit"
+        ):
+
+            response = self.client.put(
+                "/api/grievances/11/reopen"
+            )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(grievance.status, "In Progress")
+        self.assertIsNone(grievance.sla_due_at)
+        self.assertIsNone(grievance.current_handler_id)
+        self.assertIsNone(grievance.current_handler_role)
+        self.assertEqual(grievance.escalation_level, 0)
+        self.assertIsNone(grievance.last_escalated_at)
+        self.assertIsNone(response.get_json()["sla_due_at"])
+        sla_mock.assert_not_called()
+
 
     def test_reopen_rejects_grievance_that_is_not_resolved(self):
         student = MagicMock()

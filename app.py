@@ -186,6 +186,32 @@ def advisor_dashboard_page():
     return render_template("advisor_dashboard.html", user=user)
 
 
+# Chairperson Dashboard
+@app.route("/chairperson/dashboard")
+def chairperson_dashboard_page():
+    from flask import jsonify, redirect, url_for
+
+    if not session.get("user_id"):
+        return redirect(url_for("auth.login_page"))
+
+    if session.get("role") != User.ROLE_CHAIRPERSON:
+        return jsonify({
+            "error": "Only chairpersons can access the Chairperson dashboard"
+        }), 403
+
+    user = db.session.get(User, session["user_id"])
+
+    if (
+        not user
+        or user.role != User.ROLE_CHAIRPERSON
+        or user.account_status != User.STATUS_ACTIVE
+    ):
+        session.clear()
+        return redirect(url_for("auth.login_page"))
+
+    return render_template("chairperson_dashboard.html", user=user)
+
+
 if __name__ == "__main__":
     with app.app_context():
         db.create_all()
