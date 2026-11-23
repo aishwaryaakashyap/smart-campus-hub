@@ -102,6 +102,11 @@ def check_eligibility_route(drive_id):
     if not drive:
         return jsonify({'error': 'Placement drive not found'}), 404
 
+    if not drive.job_role or not drive.job_role.strip():
+        return jsonify({
+            'error': 'This placement drive has an invalid job role'
+        }), 400
+
     is_eligible, reasons = check_eligibility(student, drive)
 
     return jsonify({
@@ -139,6 +144,11 @@ def apply():
 
     if not drive:
         return jsonify({'error': 'Placement drive not found'}), 404
+
+    if not drive.job_role or not drive.job_role.strip():
+        return jsonify({
+            'error': 'This placement drive has an invalid job role'
+        }), 400
 
     if drive.status != 'Open':
         return jsonify({
