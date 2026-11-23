@@ -103,7 +103,9 @@
 
             <div class="field">
                 <label for="email">Email Address *</label>
-                <input id="email" type="email" maxlength="120" required>
+                <input id="email" type="email" maxlength="120" required
+                       placeholder="name@my.students.amrita.edu"
+                       title="Use your institutional student email ending with @my.students.amrita.edu">
             </div>
 
             <div class="field">
@@ -275,12 +277,24 @@
     $("registrationForm").addEventListener("submit", async event => {
         event.preventDefault();
 
+        const email = $("email").value.trim();
+        const emailDomain = email.split("@").pop().toLowerCase();
+
+        if (emailDomain !== "my.students.amrita.edu") {
+            showMessage(
+                "Please use your institutional student email ending with @my.students.amrita.edu.",
+                "error"
+            );
+            $("email").focus();
+            return;
+        }
+
         const button = $("registerButton");
         button.disabled = true;
 
         const payload = {
             name: $("name").value.trim(),
-            email: $("email").value.trim(),
+            email,
             password: $("password").value,
             role: "student",
             register_number: $("register_number").value.trim(),

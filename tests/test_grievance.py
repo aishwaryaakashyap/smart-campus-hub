@@ -421,6 +421,9 @@ class GrievanceSecurityTests(unittest.TestCase):
         grievance.id = 10
         grievance.title = "Test grievance"
         grievance.priority = "High"
+        grievance.assigned_to = None
+        grievance.current_handler_id = None
+        grievance.current_handler_role = None
         grievance.escalation_level = 1
         grievance.last_escalated_at = datetime(2026, 11, 10, 10, 0, 0)
 
@@ -440,6 +443,8 @@ class GrievanceSecurityTests(unittest.TestCase):
         ) as sla_mock, patch(
             "routes.grievance.create_notification"
         ) as notification_mock, patch(
+            "routes.grievance.record_activity"
+        ) as activity_mock, patch(
             "routes.grievance.db.session.commit"
         ) as commit_mock:
 
@@ -463,7 +468,119 @@ class GrievanceSecurityTests(unittest.TestCase):
 
         sla_mock.assert_called_once_with("High")
         notification_mock.assert_called_once()
+        activity_mock.assert_called_once_with(
+            actor_user_id=1,
+            target_user_id=6,
+            action="grievance_assigned",
+            entity_type="grievance",
+            entity_id=10,
+            description="Coordinator assigned grievance 10 to Advisor 6"
+        )
         commit_mock.assert_called_once()
+
+
+    def test_transferring_grievance_records_activity(self):
+        with self.client.session_transaction() as session:
+            session["user_id"] = 1
+            session["role"] = "coordinator"
+
+        grievance = MagicMock()
+        grievance.id = 10
+        grievance.title = "Test grievance"
+        grievance.priority = "High"
+        grievance.assigned_to = 5
+        grievance.current_handler_id = 5
+        grievance.current_handler_role = "advisor"
+
+        advisor = MagicMock()
+        advisor.id = 6
+        advisor.role = "advisor"
+        advisor.account_status = "active"
+
+        expected_deadline = datetime(2026, 11, 14, 10, 0, 0)
+
+        with patch(
+            "routes.grievance.db.session.get",
+            side_effect=[grievance, advisor]
+        ), patch(
+            "routes.grievance.calculate_sla_due_at",
+            return_value=expected_deadline
+        ), patch(
+            "routes.grievance.create_notification"
+        ) as notification_mock, patch(
+            "routes.grievance.record_activity"
+        ) as activity_mock, patch(
+            "routes.grievance.db.session.commit"
+        ) as commit_mock:
+
+            response = self.client.put(
+                "/api/grievances/10/assign",
+                json={"advisor_id": 6}
+            )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(grievance.assigned_to, 6)
+        self.assertEqual(grievance.current_handler_id, 6)
+        self.assertEqual(grievance.current_handler_role, "advisor")
+
+        notification_mock.assert_called_once()
+        activity_mock.assert_called_once_with(
+            actor_user_id=1,
+            target_user_id=6,
+            action="grievance_transferred",
+            entity_type="grievance",
+            entity_id=10,
+            description=(
+                "Coordinator transferred grievance 10 "
+                "from Advisor 5 to Advisor 6"
+            )
+        )
+        commit_mock.assert_called_once()
+
+
+    def test_reassigning_same_current_advisor_does_not_duplicate_notification(self):
+        with self.client.session_transaction() as session:
+            session["user_id"] = 1
+            session["role"] = "coordinator"
+
+        grievance = MagicMock()
+        grievance.id = 10
+        grievance.assigned_to = 6
+        grievance.current_handler_id = 6
+        grievance.current_handler_role = "advisor"
+
+        advisor = MagicMock()
+        advisor.id = 6
+        advisor.role = "advisor"
+        advisor.account_status = "active"
+
+        with patch(
+            "routes.grievance.db.session.get",
+            side_effect=[grievance, advisor]
+        ), patch(
+            "routes.grievance.create_notification"
+        ) as notification_mock, patch(
+            "routes.grievance.calculate_sla_due_at"
+        ) as sla_mock, patch(
+            "routes.grievance.record_activity"
+        ) as activity_mock, patch(
+            "routes.grievance.db.session.commit"
+        ) as commit_mock:
+
+            response = self.client.put(
+                "/api/grievances/10/assign",
+                json={"advisor_id": 6}
+            )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.get_json()["message"],
+            "Grievance is already assigned to this Advisor"
+        )
+        notification_mock.assert_not_called()
+        sla_mock.assert_not_called()
+        activity_mock.assert_not_called()
+        commit_mock.assert_not_called()
 
 
     def test_assignment_rejects_boolean_advisor_id(self):

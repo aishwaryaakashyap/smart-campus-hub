@@ -12,6 +12,7 @@ from extensions import db
 from models import ChairpersonSettings, PasswordResetToken, User
 from routes.academic_admin import require_coordinator
 from services.email_service import send_account_setup_email
+from services.activity_log import record_activity
 
 
 chairperson_admin_bp = Blueprint(
@@ -268,6 +269,11 @@ def create_chairperson():
             "error": "A valid email address is required"
         }), 400
 
+    if email.rsplit("@", 1)[1] != "my.amrita.edu":
+        return jsonify({
+            "error": "Please use your institutional staff email ending with @my.amrita.edu"
+        }), 400
+
     if User.query.filter_by(email=email).first():
         return jsonify({
             "error": "This email address is already registered"
@@ -285,6 +291,15 @@ def create_chairperson():
 
     try:
         db.session.add(chairperson)
+        db.session.flush()
+        record_activity(
+            actor_user_id=session["user_id"],
+            target_user_id=chairperson.id,
+            action="chairperson_created",
+            entity_type="user",
+            entity_id=chairperson.id,
+            description="Coordinator created Chairperson account"
+        )
         db.session.commit()
 
     except IntegrityError:
@@ -343,6 +358,14 @@ def approve_chairperson(chairperson_id):
     chairperson.rejection_reason = None
 
     try:
+        record_activity(
+            actor_user_id=session["user_id"],
+            target_user_id=chairperson.id,
+            action="chairperson_approved",
+            entity_type="user",
+            entity_id=chairperson.id,
+            description="Coordinator approved Chairperson account"
+        )
         db.session.commit()
 
     except SQLAlchemyError:
@@ -415,6 +438,14 @@ def reject_chairperson(chairperson_id):
 
     try:
         invalidate_chairperson_setup_tokens(chairperson.id)
+        record_activity(
+            actor_user_id=session["user_id"],
+            target_user_id=chairperson.id,
+            action="chairperson_rejected",
+            entity_type="user",
+            entity_id=chairperson.id,
+            description="Coordinator rejected Chairperson account"
+        )
         db.session.commit()
 
     except SQLAlchemyError:
@@ -478,6 +509,14 @@ def deactivate_chairperson(chairperson_id):
 
     try:
         invalidate_chairperson_setup_tokens(chairperson.id)
+        record_activity(
+            actor_user_id=session["user_id"],
+            target_user_id=chairperson.id,
+            action="chairperson_deactivated",
+            entity_type="user",
+            entity_id=chairperson.id,
+            description="Coordinator deactivated Chairperson account"
+        )
         db.session.commit()
 
     except SQLAlchemyError:
@@ -526,6 +565,14 @@ def reactivate_chairperson(chairperson_id):
     chairperson.reviewed_at = datetime.now(timezone.utc).replace(tzinfo=None)
 
     try:
+        record_activity(
+            actor_user_id=session["user_id"],
+            target_user_id=chairperson.id,
+            action="chairperson_reactivated",
+            entity_type="user",
+            entity_id=chairperson.id,
+            description="Coordinator reactivated Chairperson account"
+        )
         db.session.commit()
 
     except SQLAlchemyError:
@@ -633,10 +680,23 @@ def set_primary_chairperson(chairperson_id):
             "error": "Chairperson settings are not initialized"
         }), 503
 
+    previous_primary_user_id = settings.primary_chairperson_user_id
     settings.primary_chairperson_user_id = chairperson.id
     settings.updated_by_user_id = session["user_id"]
 
     try:
+        if previous_primary_user_id != chairperson.id:
+            record_activity(
+                actor_user_id=session["user_id"],
+                target_user_id=chairperson.id,
+                action="primary_chairperson_changed",
+                entity_type="chairperson_settings",
+                entity_id=chairperson.id,
+                description=(
+                    f"Coordinator selected Chairperson {chairperson.id} "
+                    "as primary"
+                )
+            )
         db.session.commit()
 
     except IntegrityError:
@@ -737,25 +797,52 @@ def delete_chairperson(chairperson_id):
             "error": "Chairperson account not found"
         }), 404
 
-    if chairperson.account_status != User.STATUS_DEACTIVATED:
+    if chairperson.account_status not in (
+        User.STATUS_REJECTED,
+        User.STATUS_DEACTIVATED
+    ):
         return jsonify({
-            "error": "Only deactivated Chairperson accounts can be deleted. "
-                     "Deactivate the account first."
+            "error": (
+                "Only rejected or deactivated Chairperson accounts "
+                "can be permanently deleted."
+            )
         }), 409
 
     try:
+        settings = get_primary_settings(lock=True)
+
+        if settings is None:
+            return jsonify({
+                "error": "Chairperson settings are not initialized"
+            }), 503
+
+        if settings.primary_chairperson_user_id == chairperson_id:
+            return jsonify({
+                "error": (
+                    "The primary Chairperson cannot be deleted. "
+                    "Select another primary Chairperson first."
+                )
+            }), 409
+
         references = get_user_reference_counts(chairperson_id)
 
         if references:
             return jsonify({
                 "error": (
                     "This account cannot be permanently deleted because "
-                    "other records reference it. The account will remain "
-                    "deactivated."
+                    "other records reference it. The account remains unchanged."
                 ),
                 "references": references
             }), 409
 
+        record_activity(
+            actor_user_id=session["user_id"],
+            target_user_id=chairperson.id,
+            action="chairperson_deleted",
+            entity_type="user",
+            entity_id=chairperson_id,
+            description="Coordinator permanently deleted Chairperson account"
+        )
         db.session.delete(chairperson)
         db.session.commit()
 

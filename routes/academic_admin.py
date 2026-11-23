@@ -3,7 +3,8 @@ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from extensions import db
 from services.record_deletion_guard import find_referencing_records
-from models import AcademicClass, Student, User
+from services.activity_log import record_activity
+from models import ActivityLog, AcademicClass, Student, User
 
 
 academic_admin_bp = Blueprint(
@@ -419,7 +420,21 @@ def update_class_advisor(class_id):
             "error": "An archived class cannot have its Advisor changed"
         }), 409
 
+    previous_advisor_user_id = academic_class.advisor_user_id
+
     if advisor_user_id is None:
+        linked_student = Student.query.filter_by(
+            academic_class_id=academic_class.id
+        ).first()
+
+        if linked_student:
+            return jsonify({
+                "error": (
+                    "This class has linked students. Assign a replacement "
+                    "Advisor instead of removing the current assignment."
+                )
+            }), 409
+
         academic_class.advisor = None
         academic_class.advisor_user_id = None
         success_message = "Advisor assignment removed successfully"
@@ -447,6 +462,39 @@ def update_class_advisor(class_id):
         success_message = "Advisor assigned successfully"
 
     try:
+        if previous_advisor_user_id != advisor_user_id:
+            if advisor_user_id is None:
+                action = "class_advisor_removed"
+                target_user_id = previous_advisor_user_id
+                description = (
+                    f"Coordinator removed Advisor {previous_advisor_user_id} "
+                    f"from academic class {academic_class.id}"
+                )
+            elif previous_advisor_user_id is None:
+                action = "class_advisor_assigned"
+                target_user_id = advisor_user_id
+                description = (
+                    f"Coordinator assigned Advisor {advisor_user_id} "
+                    f"to academic class {academic_class.id}"
+                )
+            else:
+                action = "class_advisor_changed"
+                target_user_id = advisor_user_id
+                description = (
+                    f"Coordinator changed Advisor for academic class "
+                    f"{academic_class.id} from "
+                    f"{previous_advisor_user_id} to {advisor_user_id}"
+                )
+
+            record_activity(
+                actor_user_id=session.get("user_id"),
+                target_user_id=target_user_id,
+                action=action,
+                entity_type="academic_class",
+                entity_id=academic_class.id,
+                description=description
+            )
+
         db.session.commit()
 
     except IntegrityError:
@@ -615,3 +663,74 @@ def delete_academic_class(class_id):
         return jsonify({
             "error": "A database error prevented academic class deletion."
         }), 500
+
+@academic_admin_bp.route("/activity-logs", methods=["GET"])
+def list_activity_logs():
+    """List recent administrative activity for the Coordinator."""
+    auth_error = require_coordinator()
+
+    if auth_error:
+        return auth_error
+
+    try:
+        page = int(request.args.get("page", "1"))
+        per_page = int(request.args.get("per_page", "25"))
+    except (TypeError, ValueError):
+        return jsonify({
+            "error": "page and per_page must be valid integers"
+        }), 400
+
+    if page < 1:
+        return jsonify({"error": "page must be at least 1"}), 400
+
+    if per_page < 1 or per_page > 100:
+        return jsonify({
+            "error": "per_page must be between 1 and 100"
+        }), 400
+
+    query = ActivityLog.query.order_by(
+        ActivityLog.created_at.desc(),
+        ActivityLog.id.desc()
+    )
+
+    total = query.count()
+
+    records = query.offset(
+        (page - 1) * per_page
+    ).limit(per_page).all()
+
+    activities = []
+
+    for record in records:
+        activities.append({
+            "id": record.id,
+            "actor_user_id": record.actor_user_id,
+            "actor_name": (
+                record.actor.name if record.actor else None
+            ),
+            "target_user_id": record.target_user_id,
+            "target_name": (
+                record.target_user.name
+                if record.target_user else None
+            ),
+            "action": record.action,
+            "entity_type": record.entity_type,
+            "entity_id": record.entity_id,
+            "description": record.description,
+            "created_at": (
+                record.created_at.isoformat()
+                if record.created_at else None
+            )
+        })
+
+    return jsonify({
+        "activities": activities,
+        "pagination": {
+            "page": page,
+            "per_page": per_page,
+            "total": total,
+            "total_pages": (
+                (total + per_page - 1) // per_page
+            )
+        }
+    }), 200

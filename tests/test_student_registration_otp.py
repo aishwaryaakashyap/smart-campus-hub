@@ -57,7 +57,7 @@ class StudentRegistrationOTPTests(unittest.TestCase):
             "/api/auth/register",
             json={
                 "name": "Test Student",
-                "email": "student@example.com",
+                "email": "student@my.students.amrita.edu",
                 "password": "Password123",
                 "role": "student"
             }
@@ -65,6 +65,25 @@ class StudentRegistrationOTPTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 400)
         self.assertIn("Register number", response.get_json()["error"])
+
+    def test_registration_rejects_non_institutional_email(self):
+        response = self.client.post(
+            "/api/auth/register",
+            json={
+                "name": "Test Student",
+                "email": "student@gmail.com",
+                "password": "Password123",
+                "role": "student",
+                "register_number": "REG102",
+                "academic_class_id": 7
+            }
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn(
+            "@my.students.amrita.edu",
+            response.get_json()["error"]
+        )
 
     def test_otp_verification_rejects_invalid_otp_format(self):
         response = self.client.post(
@@ -300,7 +319,7 @@ class StudentRegistrationSuccessTests(unittest.TestCase):
                 "/api/auth/register",
                 json={
                     "name": "Test Student",
-                    "email": "STUDENT@example.com",
+                    "email": "STUDENT@MY.STUDENTS.AMRITA.EDU",
                     "password": "Password123",
                     "role": "student",
                     "register_number": "REG101",
@@ -311,7 +330,7 @@ class StudentRegistrationSuccessTests(unittest.TestCase):
             )
 
         self.assertEqual(response.status_code, 201)
-        self.assertEqual(response.get_json()["email"], "student@example.com")
+        self.assertEqual(response.get_json()["email"], "student@my.students.amrita.edu")
         self.assertTrue(response.get_json()["email_sent"])
 
         created_user = FakeUser.instances[-1]
@@ -320,7 +339,7 @@ class StudentRegistrationSuccessTests(unittest.TestCase):
         self.assertTrue(created_user.password_was_set)
 
         mock_email.assert_called_once_with(
-            "student@example.com",
+            "student@my.students.amrita.edu",
             "123456",
             10
         )
@@ -441,12 +460,14 @@ class AdvisorStudentApprovalWorkflowTests(unittest.TestCase):
 
     @patch("routes.advisor_admin.db.session.commit")
     @patch("routes.advisor_admin.create_notification")
+    @patch("routes.advisor_admin.record_activity")
     @patch("routes.advisor_admin.get_assigned_pending_student")
     @patch("routes.advisor_admin.require_current_advisor")
     def test_advisor_can_approve_verified_student(
         self,
         mock_require_advisor,
         mock_find_student,
+        mock_activity,
         mock_notification,
         mock_commit
     ):
@@ -466,16 +487,26 @@ class AdvisorStudentApprovalWorkflowTests(unittest.TestCase):
         self.assertIsNotNone(user.reviewed_at)
         self.assertIsNone(user.rejection_reason)
         mock_notification.assert_called_once()
+        mock_activity.assert_called_once_with(
+            actor_user_id=advisor.id,
+            target_user_id=user.id,
+            action="student_registration_approved",
+            entity_type="user",
+            entity_id=user.id,
+            description="Advisor approved student registration"
+        )
         mock_commit.assert_called_once()
 
     @patch("routes.advisor_admin.db.session.commit")
     @patch("routes.advisor_admin.create_notification")
+    @patch("routes.advisor_admin.record_activity")
     @patch("routes.advisor_admin.get_assigned_pending_student")
     @patch("routes.advisor_admin.require_current_advisor")
     def test_advisor_can_reject_verified_student(
         self,
         mock_require_advisor,
         mock_find_student,
+        mock_activity,
         mock_notification,
         mock_commit
     ):
@@ -498,6 +529,14 @@ class AdvisorStudentApprovalWorkflowTests(unittest.TestCase):
         )
         self.assertIsNotNone(user.reviewed_at)
         mock_notification.assert_called_once()
+        mock_activity.assert_called_once_with(
+            actor_user_id=advisor.id,
+            target_user_id=user.id,
+            action="student_registration_rejected",
+            entity_type="user",
+            entity_id=user.id,
+            description="Advisor rejected student registration"
+        )
         mock_commit.assert_called_once()
 
 

@@ -12,6 +12,7 @@ from models import (
     AcademicClass,
 )
 from services.notifications import create_notification
+from services.activity_log import record_activity
 from services.grievance_sla import calculate_sla_due_at
 
 
@@ -590,6 +591,22 @@ def assign_grievance(grievance_id):
             'error': 'The selected user is not an active Advisor'
         }), 400
 
+    # An unchanged assignment must not reset the SLA or send duplicate alerts.
+    if (
+        grievance.assigned_to == advisor.id
+        and grievance.current_handler_id == advisor.id
+        and grievance.current_handler_role == advisor.role
+    ):
+        return jsonify({
+            'message': 'Grievance is already assigned to this Advisor',
+            'grievance_id': grievance.id,
+            'advisor_id': advisor.id
+        }), 200
+
+    previous_advisor_id = grievance.assigned_to
+
+
+
     try:
         # Preserve the existing advisor assignment while synchronizing
         # the Phase 16 current-handler fields.
@@ -599,6 +616,29 @@ def assign_grievance(grievance_id):
         grievance.sla_due_at = calculate_sla_due_at(grievance.priority)
         grievance.escalation_level = 0
         grievance.last_escalated_at = None
+
+        if previous_advisor_id is None:
+            activity_action = "grievance_assigned"
+            activity_description = (
+                f"Coordinator assigned grievance {grievance.id} "
+                f"to Advisor {advisor.id}"
+            )
+        else:
+            activity_action = "grievance_transferred"
+            activity_description = (
+                f"Coordinator transferred grievance {grievance.id} "
+                f"from Advisor {previous_advisor_id} "
+                f"to Advisor {advisor.id}"
+            )
+
+        record_activity(
+            actor_user_id=user_id,
+            target_user_id=advisor.id,
+            action=activity_action,
+            entity_type="grievance",
+            entity_id=grievance.id,
+            description=activity_description
+        )
 
         create_notification(
             user_id=advisor.id,

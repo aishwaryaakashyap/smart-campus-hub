@@ -373,3 +373,120 @@ class AcademicAdminAuthorizationTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+    def test_unauthenticated_user_cannot_list_activity_logs(self):
+        response = self.client.get(
+            "/api/academic-admin/activity-logs"
+        )
+
+        self.assertEqual(response.status_code, 401)
+
+    def test_student_cannot_list_activity_logs(self):
+        self.set_session(role="student")
+
+        with patch(
+            "routes.academic_admin.get_session_user",
+            return_value=SimpleNamespace(
+                role="student",
+                account_status="active"
+            )
+        ):
+            response = self.client.get(
+                "/api/academic-admin/activity-logs"
+            )
+
+        self.assertEqual(response.status_code, 403)
+
+    def test_inactive_coordinator_cannot_list_activity_logs(self):
+        self.set_session(role="coordinator")
+
+        with patch(
+            "routes.academic_admin.get_session_user",
+            return_value=SimpleNamespace(
+                role="coordinator",
+                account_status="deactivated"
+            )
+        ):
+            response = self.client.get(
+                "/api/academic-admin/activity-logs"
+            )
+
+        self.assertEqual(response.status_code, 401)
+        self.assert_session_cleared()
+
+    def test_active_coordinator_can_list_activity_logs(self):
+        self.set_session(role="coordinator")
+
+        with patch(
+            "routes.academic_admin.get_session_user",
+            return_value=self.active_coordinator()
+        ), patch(
+            "routes.academic_admin.ActivityLog.query"
+        ) as activity_query:
+
+            activity_query.order_by.return_value.count.return_value = 0
+            activity_query.order_by.return_value.offset.return_value.limit.return_value.all.return_value = []
+
+            response = self.client.get(
+                "/api/academic-admin/activity-logs"
+            )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get_json(), {
+            "activities": [],
+            "pagination": {
+                "page": 1,
+                "per_page": 25,
+                "total": 0,
+                "total_pages": 0
+            }
+        })
+
+    def test_activity_logs_support_pagination(self):
+        self.set_session(role="coordinator")
+
+        with patch(
+            "routes.academic_admin.get_session_user",
+            return_value=self.active_coordinator()
+        ), patch(
+            "routes.academic_admin.ActivityLog.query"
+        ) as activity_query:
+
+            ordered_query = activity_query.order_by.return_value
+            ordered_query.count.return_value = 51
+            ordered_query.offset.return_value.limit.return_value.all.return_value = []
+
+            response = self.client.get(
+                "/api/academic-admin/activity-logs?page=2&per_page=10"
+            )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get_json()["pagination"], {
+            "page": 2,
+            "per_page": 10,
+            "total": 51,
+            "total_pages": 6
+        })
+        ordered_query.offset.assert_called_once_with(10)
+        ordered_query.offset.return_value.limit.assert_called_once_with(10)
+
+    def test_invalid_activity_log_pagination_is_rejected(self):
+        self.set_session(role="coordinator")
+
+        with patch(
+            "routes.academic_admin.get_session_user",
+            return_value=self.active_coordinator()
+        ):
+            invalid_page = self.client.get(
+                "/api/academic-admin/activity-logs?page=zero"
+            )
+            invalid_size = self.client.get(
+                "/api/academic-admin/activity-logs?per_page=101"
+            )
+            invalid_zero_page = self.client.get(
+                "/api/academic-admin/activity-logs?page=0"
+            )
+
+        self.assertEqual(invalid_page.status_code, 400)
+        self.assertEqual(invalid_size.status_code, 400)
+        self.assertEqual(invalid_zero_page.status_code, 400)

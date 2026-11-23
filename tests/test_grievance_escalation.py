@@ -4,6 +4,7 @@ from flask import Flask
 
 from extensions import db
 from models import (
+    ActivityLog,
     AcademicClass,
     ChairpersonSettings,
     Grievance,
@@ -42,6 +43,7 @@ class GrievanceEscalationIntegrationTests(unittest.TestCase):
 
         self.test_tables = [
             User.__table__,
+            ActivityLog.__table__,
             AcademicClass.__table__,
             Student.__table__,
             GrievanceCategory.__table__,
@@ -178,6 +180,26 @@ class GrievanceEscalationIntegrationTests(unittest.TestCase):
             self.now - timedelta(minutes=1)
         )
         self.assertIsNone(event.triggered_by_user_id)
+
+        activity = ActivityLog.query.filter_by(
+            action="grievance_escalated",
+            entity_type="grievance",
+            entity_id=grievance.id
+        ).one()
+
+        self.assertIsNone(activity.actor_user_id)
+        self.assertEqual(
+            activity.target_user_id,
+            self.chairperson.id
+        )
+        self.assertEqual(
+            activity.description,
+            (
+                f"Automatically escalated grievance {grievance.id} "
+                f"from Advisor {self.advisor.id} "
+                f"to Chairperson {self.chairperson.id}"
+            )
+        )
 
         notification = Notification.query.filter_by(
             user_id=self.chairperson.id
@@ -342,6 +364,14 @@ class GrievanceEscalationIntegrationTests(unittest.TestCase):
         self.assertEqual(
             Notification.query.filter_by(
                 user_id=self.chairperson.id
+            ).count(),
+            1
+        )
+        self.assertEqual(
+            ActivityLog.query.filter_by(
+                action="grievance_escalated",
+                entity_type="grievance",
+                entity_id=grievance.id
             ).count(),
             1
         )

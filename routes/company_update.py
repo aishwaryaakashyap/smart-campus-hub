@@ -113,7 +113,10 @@ def post_update():
     try:
         db.session.add(new_update)
 
-        students = User.query.filter_by(role='student').all()
+        students = User.query.filter_by(
+            role=User.ROLE_STUDENT,
+            account_status=User.STATUS_ACTIVE
+        ).all()
 
         for student in students:
             create_notification(

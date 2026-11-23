@@ -149,7 +149,7 @@ class AdvisorAdminTests(unittest.TestCase):
                 "/api/academic-admin/advisors",
                 json={
                     "name": "New Advisor",
-                    "email": "NEW.ADVISOR@example.com"
+                    "email": "NEW.ADVISOR@my.amrita.edu"
                 }
             )
 
@@ -163,12 +163,28 @@ class AdvisorAdminTests(unittest.TestCase):
         self.assertNotIn("password_hash", result["advisor"])
 
         created = add_record.call_args.args[0]
-        self.assertEqual(created.email, "new.advisor@example.com")
+        self.assertEqual(created.email, "new.advisor@my.amrita.edu")
         self.assertTrue(created.password_hash)
         self.assertFalse(
             created.check_password("KnownTemporaryPassword123")
         )
         commit.assert_called_once()
+
+    def test_personal_email_domain_is_rejected_for_advisor(self):
+        with patch(
+            "routes.advisor_admin.db.session.add"
+        ) as add_record:
+            response = self.client.post(
+                "/api/academic-admin/advisors",
+                json={
+                    "name": "Personal Email Advisor",
+                    "email": "person@gmail.com"
+                }
+            )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("@my.amrita.edu", response.get_json()["error"])
+        add_record.assert_not_called()
 
     def test_duplicate_advisor_email_is_rejected(self):
         with patch(
@@ -181,7 +197,7 @@ class AdvisorAdminTests(unittest.TestCase):
                 "/api/academic-admin/advisors",
                 json={
                     "name": "Duplicate Advisor",
-                    "email": "existing@example.com"
+                    "email": "existing@my.amrita.edu"
                 }
             )
 
@@ -219,6 +235,8 @@ class AdvisorAdminTests(unittest.TestCase):
             "routes.advisor_admin.create_setup_token",
             return_value=("secret-setup-token", 15)
         ), patch(
+            "routes.advisor_admin.record_activity"
+        ) as activity, patch(
             "routes.advisor_admin.db.session.commit"
         ) as commit, patch(
             "routes.advisor_admin.send_setup_link",
@@ -236,6 +254,14 @@ class AdvisorAdminTests(unittest.TestCase):
         self.assertTrue(response.get_json()["email_sent"])
         self.assertNotIn("secret-setup-token", response.get_data(as_text=True))
         send_email.assert_called_once()
+        activity.assert_called_once_with(
+            actor_user_id=1,
+            target_user_id=20,
+            action="advisor_approved",
+            entity_type="user",
+            entity_id=20,
+            description="Coordinator approved Advisor account"
+        )
         commit.assert_called_once()
 
     def test_approval_returns_202_when_setup_email_fails(self):
@@ -284,6 +310,8 @@ class AdvisorAdminTests(unittest.TestCase):
         ), patch(
             "routes.advisor_admin.invalidate_unused_setup_tokens"
         ), patch(
+            "routes.advisor_admin.record_activity"
+        ) as activity, patch(
             "routes.advisor_admin.db.session.commit"
         ) as commit, self.serialize_patch():
 
@@ -299,6 +327,14 @@ class AdvisorAdminTests(unittest.TestCase):
             "Institutional records not verified"
         )
         self.assertEqual(account.reviewed_by_user_id, 1)
+        activity.assert_called_once_with(
+            actor_user_id=1,
+            target_user_id=20,
+            action="advisor_rejected",
+            entity_type="user",
+            entity_id=20,
+            description="Coordinator rejected Advisor account"
+        )
         commit.assert_called_once()
 
     def test_rejection_reason_must_be_text(self):
@@ -327,6 +363,8 @@ class AdvisorAdminTests(unittest.TestCase):
         ), patch(
             "routes.advisor_admin.invalidate_unused_setup_tokens"
         ), patch(
+            "routes.advisor_admin.record_activity"
+        ) as activity, patch(
             "routes.advisor_admin.db.session.commit"
         ) as commit, self.serialize_patch():
 
@@ -344,6 +382,14 @@ class AdvisorAdminTests(unittest.TestCase):
             "preserved",
             response.get_json()["message"]
         )
+        activity.assert_called_once_with(
+            actor_user_id=1,
+            target_user_id=20,
+            action="advisor_deactivated",
+            entity_type="user",
+            entity_id=20,
+            description="Coordinator deactivated Advisor account"
+        )
         commit.assert_called_once()
 
     def test_coordinator_can_reactivate_deactivated_advisor(self):
@@ -353,6 +399,8 @@ class AdvisorAdminTests(unittest.TestCase):
             "routes.advisor_admin.get_advisor_account",
             return_value=account
         ), patch(
+            "routes.advisor_admin.record_activity"
+        ) as activity, patch(
             "routes.advisor_admin.db.session.commit"
         ) as commit, self.serialize_patch():
 
@@ -364,6 +412,14 @@ class AdvisorAdminTests(unittest.TestCase):
         self.assertEqual(account.account_status, "active")
         self.assertEqual(account.reviewed_by_user_id, 1)
         self.assertIsNone(account.rejection_reason)
+        activity.assert_called_once_with(
+            actor_user_id=1,
+            target_user_id=20,
+            action="advisor_reactivated",
+            entity_type="user",
+            entity_id=20,
+            description="Coordinator reactivated Advisor account"
+        )
         commit.assert_called_once()
 
     def test_only_deactivated_advisor_can_be_reactivated(self):

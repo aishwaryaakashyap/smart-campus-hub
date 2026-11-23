@@ -31,6 +31,10 @@ class ChairpersonAdminTests(unittest.TestCase):
 
         self.client = app.test_client()
 
+        activity_patch = patch("routes.chairperson_admin.record_activity")
+        self.record_activity = activity_patch.start()
+        self.addCleanup(activity_patch.stop)
+
         self.coordinator = SimpleNamespace(
             id=1,
             role="coordinator",
@@ -192,7 +196,7 @@ class ChairpersonAdminTests(unittest.TestCase):
                 "/api/academic-admin/chairpersons",
                 json={
                     "name": "New Chairperson",
-                    "email": "NEW.CHAIRPERSON@example.com"
+                    "email": "NEW.CHAIRPERSON@my.amrita.edu"
                 }
             )
 
@@ -211,7 +215,7 @@ class ChairpersonAdminTests(unittest.TestCase):
         created = add_record.call_args.args[0]
         self.assertEqual(
             created.email,
-            "new.chairperson@example.com"
+            "new.chairperson@my.amrita.edu"
         )
         self.assertTrue(created.password_hash)
         self.assertFalse(
@@ -219,6 +223,31 @@ class ChairpersonAdminTests(unittest.TestCase):
         )
 
         commit.assert_called_once()
+
+        self.record_activity.assert_called_once_with(
+            actor_user_id=1,
+            target_user_id=91,
+            action="chairperson_created",
+            entity_type="user",
+            entity_id=91,
+            description="Coordinator created Chairperson account"
+        )
+
+    def test_personal_email_domain_is_rejected_for_chairperson(self):
+        with patch(
+            "routes.chairperson_admin.db.session.add"
+        ) as add_record:
+            response = self.client.post(
+                "/api/academic-admin/chairpersons",
+                json={
+                    "name": "Personal Email Chairperson",
+                    "email": "person@gmail.com"
+                }
+            )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("@my.amrita.edu", response.get_json()["error"])
+        add_record.assert_not_called()
 
     def test_duplicate_chairperson_email_is_rejected(self):
         with patch(
@@ -231,7 +260,7 @@ class ChairpersonAdminTests(unittest.TestCase):
                 "/api/academic-admin/chairpersons",
                 json={
                     "name": "Duplicate Chairperson",
-                    "email": "existing@example.com"
+                    "email": "existing@my.amrita.edu"
                 }
             )
 
@@ -279,6 +308,15 @@ class ChairpersonAdminTests(unittest.TestCase):
         )
         send_email.assert_called_once()
         commit.assert_called_once()
+
+        self.record_activity.assert_called_once_with(
+            actor_user_id=1,
+            target_user_id=20,
+            action="chairperson_approved",
+            entity_type="user",
+            entity_id=20,
+            description="Coordinator approved Chairperson account"
+        )
 
     def test_approval_returns_202_when_setup_email_fails(self):
         account = self.chairperson()
@@ -349,6 +387,15 @@ class ChairpersonAdminTests(unittest.TestCase):
         self.assertEqual(account.reviewed_by_user_id, 1)
         commit.assert_called_once()
 
+        self.record_activity.assert_called_once_with(
+            actor_user_id=1,
+            target_user_id=20,
+            action="chairperson_rejected",
+            entity_type="user",
+            entity_id=20,
+            description="Coordinator rejected Chairperson account"
+        )
+
     def test_deactivating_primary_chairperson_clears_selection(self):
         account = self.chairperson(status="active")
         settings = self.settings(primary_id=20)
@@ -375,6 +422,15 @@ class ChairpersonAdminTests(unittest.TestCase):
         self.assertEqual(settings.updated_by_user_id, 1)
         get_settings.assert_called_once_with(lock=True)
         commit.assert_called_once()
+
+        self.record_activity.assert_called_once_with(
+            actor_user_id=1,
+            target_user_id=20,
+            action="chairperson_deactivated",
+            entity_type="user",
+            entity_id=20,
+            description="Coordinator deactivated Chairperson account"
+        )
 
     def test_deactivation_does_not_overwrite_rejection_reason(self):
         account = self.chairperson(
@@ -428,6 +484,15 @@ class ChairpersonAdminTests(unittest.TestCase):
         self.assertEqual(account.reviewed_by_user_id, 1)
         commit.assert_called_once()
 
+        self.record_activity.assert_called_once_with(
+            actor_user_id=1,
+            target_user_id=20,
+            action="chairperson_reactivated",
+            entity_type="user",
+            entity_id=20,
+            description="Coordinator reactivated Chairperson account"
+        )
+
     def test_only_active_chairperson_can_become_primary(self):
         account = self.chairperson(status="pending")
 
@@ -475,6 +540,15 @@ class ChairpersonAdminTests(unittest.TestCase):
         )
         get_settings.assert_called_once_with(lock=True)
         commit.assert_called_once()
+
+        self.record_activity.assert_called_once_with(
+            actor_user_id=1,
+            target_user_id=20,
+            action="primary_chairperson_changed",
+            entity_type="chairperson_settings",
+            entity_id=20,
+            description="Coordinator selected Chairperson 20 as primary"
+        )
 
     def test_primary_selection_requires_settings_record(self):
         account = self.chairperson(status="active")
@@ -554,3 +628,38 @@ class ChairpersonAdminTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+    def test_coordinator_can_delete_deactivated_chairperson(self):
+        account = self.chairperson(status="deactivated")
+
+        with patch(
+            "routes.chairperson_admin.get_chairperson_account",
+            return_value=account
+        ), patch(
+            "routes.chairperson_admin.get_primary_settings",
+            return_value=self.settings()
+        ), patch(
+            "routes.chairperson_admin.get_user_reference_counts",
+            return_value=[]
+        ), patch(
+            "routes.chairperson_admin.db.session.delete"
+        ) as delete_record, patch(
+            "routes.chairperson_admin.db.session.commit"
+        ) as commit:
+
+            response = self.client.post(
+                "/api/academic-admin/chairpersons/20/delete"
+            )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get_json()["deleted_id"], 20)
+        delete_record.assert_called_once_with(account)
+        commit.assert_called_once()
+        self.record_activity.assert_called_once_with(
+            actor_user_id=1,
+            target_user_id=20,
+            action="chairperson_deleted",
+            entity_type="user",
+            entity_id=20,
+            description="Coordinator permanently deleted Chairperson account"
+        )

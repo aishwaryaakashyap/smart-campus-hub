@@ -9,6 +9,7 @@ from models import (
     User,
 )
 from services.notifications import create_notification
+from services.activity_log import record_activity
 
 
 logger = logging.getLogger(__name__)
@@ -133,6 +134,19 @@ def escalate_overdue_grievances(now=None):
             )
 
             db.session.add(escalation)
+
+            record_activity(
+                actor_user_id=None,
+                target_user_id=chairperson.id,
+                action="grievance_escalated",
+                entity_type="grievance",
+                entity_id=grievance.id,
+                description=(
+                    f"Automatically escalated grievance {grievance.id} "
+                    f"from Advisor {previous_advisor_id} "
+                    f"to Chairperson {chairperson.id}"
+                )
+            )
 
             create_notification(
                 user_id=chairperson.id,
