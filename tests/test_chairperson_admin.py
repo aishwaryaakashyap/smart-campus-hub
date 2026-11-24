@@ -625,10 +625,6 @@ class ChairpersonAdminTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 401)
 
-
-if __name__ == "__main__":
-    unittest.main()
-
     def test_coordinator_can_delete_deactivated_chairperson(self):
         account = self.chairperson(status="deactivated")
 
@@ -663,3 +659,6 @@ if __name__ == "__main__":
             entity_id=20,
             description="Coordinator permanently deleted Chairperson account"
         )
+
+if __name__ == "__main__":
+    unittest.main()

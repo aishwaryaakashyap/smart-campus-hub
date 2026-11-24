@@ -370,10 +370,6 @@ class AcademicAdminAuthorizationTests(unittest.TestCase):
         self.assertEqual(response.status_code, 409)
         rollback.assert_called_once()
 
-
-if __name__ == "__main__":
-    unittest.main()
-
     def test_unauthenticated_user_cannot_list_activity_logs(self):
         response = self.client.get(
             "/api/academic-admin/activity-logs"
@@ -490,3 +486,6 @@ if __name__ == "__main__":
         self.assertEqual(invalid_page.status_code, 400)
         self.assertEqual(invalid_size.status_code, 400)
         self.assertEqual(invalid_zero_page.status_code, 400)
+
+if __name__ == "__main__":
+    unittest.main()

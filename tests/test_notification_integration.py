@@ -141,11 +141,6 @@ class NotificationIntegrationTests(unittest.TestCase):
         )
         commit.assert_called_once()
 
-
-if __name__ == '__main__':
-    unittest.main()
-
-
 class GrievanceNotificationIntegrationTests(unittest.TestCase):
 
     def setUp(self):
@@ -292,3 +287,6 @@ class GrievanceNotificationIntegrationTests(unittest.TestCase):
             notification_type='grievance'
         )
         commit.assert_called_once()
+
+if __name__ == '__main__':
+    unittest.main()

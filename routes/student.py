@@ -1,3 +1,4 @@
+
 from flask import Blueprint, request, jsonify, session
 from extensions import db
 from models import Student, User
@@ -11,7 +12,7 @@ def get_session_user(user_id):
 
 
 def require_login_student():
-    """Verify that the current account still has the student role."""
+    """Verify that the current account is active and has the student role."""
     user_id = session.get('user_id')
 
     if not user_id:
@@ -23,8 +24,12 @@ def require_login_student():
     session_role = session.get('role')
     user = get_session_user(user_id)
 
-    # Invalidate sessions for deleted accounts or changed roles.
-    if not user or user.role != session_role:
+    # Invalidate sessions for deleted, inactive, or changed-role accounts.
+    if (
+        not user
+        or user.role != session_role
+        or user.account_status != User.STATUS_ACTIVE
+    ):
         session.clear()
         return None, (
             jsonify({'error': 'Not logged in'}),
