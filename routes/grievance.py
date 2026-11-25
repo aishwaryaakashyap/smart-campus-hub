@@ -9,7 +9,6 @@ from models import (
     GrievanceUpdate,
     Student,
     User,
-    AcademicClass,
 )
 from services.notifications import create_notification
 from services.activity_log import record_activity
@@ -184,29 +183,8 @@ def submit_grievance():
     if location is not None and not isinstance(location, str):
         return jsonify({'error': 'Location must be text'}), 400
 
-    # Resolve the student's active class Advisor, if one is assigned.
-    advisor = None
-    academic_class = None
-
-    if student.academic_class_id:
-        academic_class = db.session.get(
-            AcademicClass,
-            student.academic_class_id
-        )
-
-    if academic_class and academic_class.is_active and academic_class.advisor_user_id:
-        candidate = db.session.get(
-            User,
-            academic_class.advisor_user_id
-        )
-
-        if (
-            candidate
-            and candidate.role == User.ROLE_ADVISOR
-            and candidate.account_status == User.STATUS_ACTIVE
-        ):
-            advisor = candidate
-
+    # Submission creates an unassigned grievance. The four-working-day
+    # Advisor SLA starts only when a Coordinator explicitly assigns it.
     grievance = Grievance(
         student_id=student.id,
         category_id=category.id,
@@ -215,27 +193,15 @@ def submit_grievance():
         location=location.strip() if location and location.strip() else None,
         priority=priority,
         status='Submitted',
-        assigned_to=advisor.id if advisor else None,
-        current_handler_id=advisor.id if advisor else None,
-        current_handler_role=User.ROLE_ADVISOR if advisor else None,
-        sla_due_at=calculate_sla_due_at(priority) if advisor else None
+        assigned_to=None,
+        current_handler_id=None,
+        current_handler_role=None,
+        sla_due_at=None
     )
 
     try:
         db.session.add(grievance)
         db.session.flush()
-
-        if advisor:
-            create_notification(
-                user_id=advisor.id,
-                title='New Grievance Assigned to You',
-                message=(
-                    f'New grievance "{grievance.title}" '
-                    f'has been automatically assigned to you '
-                    f'based on the student\'s academic class.'
-                ),
-                notification_type='grievance'
-            )
 
         coordinators = User.query.filter_by(role='coordinator').all()
 
