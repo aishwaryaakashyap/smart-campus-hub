@@ -268,7 +268,7 @@ class GrievanceSecurityTests(unittest.TestCase):
             response.get_json()['error'],
             'Location must be text'
         )
-    def test_submission_automatically_assigns_active_class_advisor(self):
+    def test_submission_does_not_auto_assign_class_advisor(self):
         with self.client.session_transaction() as session:
             session["user_id"] = 1
             session["role"] = "student"
@@ -282,16 +282,6 @@ class GrievanceSecurityTests(unittest.TestCase):
         category.name = "Infrastructure"
         category.is_active = True
 
-        academic_class = MagicMock()
-        academic_class.id = 3
-        academic_class.is_active = True
-        academic_class.advisor_user_id = 6
-
-        advisor = MagicMock()
-        advisor.id = 6
-        advisor.role = "advisor"
-        advisor.account_status = "active"
-
         grievance = MagicMock()
         grievance.id = 101
         grievance.title = "Classroom issue"
@@ -299,19 +289,16 @@ class GrievanceSecurityTests(unittest.TestCase):
         grievance.status = "Submitted"
         grievance.created_at = datetime(2026, 11, 10, 10, 0, 0)
 
-        expected_deadline = datetime(2026, 11, 14, 10, 0, 0)
-
         with patch(
             "routes.grievance.Student.query"
         ) as student_query, patch(
             "routes.grievance.db.session.get",
-            side_effect=[category, academic_class, advisor]
+            return_value=category
         ), patch(
             "routes.grievance.Grievance",
             return_value=grievance
         ) as grievance_factory, patch(
-            "routes.grievance.calculate_sla_due_at",
-            return_value=expected_deadline
+            "routes.grievance.calculate_sla_due_at"
         ) as sla_mock, patch(
             "routes.grievance.User.query"
         ) as user_query, patch(
@@ -339,14 +326,13 @@ class GrievanceSecurityTests(unittest.TestCase):
         self.assertEqual(response.status_code, 201)
 
         created_values = grievance_factory.call_args.kwargs
-        self.assertEqual(created_values["assigned_to"], 6)
-        self.assertEqual(created_values["current_handler_id"], 6)
-        self.assertEqual(created_values["current_handler_role"], "advisor")
-        self.assertEqual(created_values["sla_due_at"], expected_deadline)
+        self.assertIsNone(created_values["assigned_to"])
+        self.assertIsNone(created_values["current_handler_id"])
+        self.assertIsNone(created_values["current_handler_role"])
+        self.assertIsNone(created_values["sla_due_at"])
 
-        sla_mock.assert_called_once_with("High")
-        notification_mock.assert_called_once()
-        self.assertEqual(notification_mock.call_args.kwargs["user_id"], 6)
+        sla_mock.assert_not_called()
+        notification_mock.assert_not_called()
 
     def test_submission_does_not_start_sla_before_advisor_assignment(self):
         for index, priority in enumerate(("High", "Medium", "Low")):
