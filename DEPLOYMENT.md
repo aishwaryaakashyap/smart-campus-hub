@@ -683,13 +683,13 @@ Production deployment requires a verified database migration plan, secure infras
 ## Public Holidays for Grievance SLA
 
 `GRIEVANCE_PUBLIC_HOLIDAYS` is an optional environment variable.
-It excludes configured public holidays from grievance SLA calculations.
+Configured dates are excluded from the 4-working-day grievance SLA calculation.
 Use comma-separated dates in YYYY-MM-DD format.
 
 Example:
 
 ```env
-GRIEVANCE_PUBLIC_HOLIDAYS=2027-01-26,2027-08-15,2027-10-02
+GRIEVANCE_PUBLIC_HOLIDAYS=2026-12-25,2027-01-01
 ```
 
 Replace the example dates with your institution holidays.
