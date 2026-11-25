@@ -1,3 +1,4 @@
+
 import unittest
 from types import SimpleNamespace
 from unittest.mock import patch
@@ -32,7 +33,8 @@ class StudentProfileSecurityTests(unittest.TestCase):
         self.current_user_patcher = patch(
             "routes.student.get_session_user",
             side_effect=lambda user_id: SimpleNamespace(
-                role=session.get("role")
+                role=session.get("role"),
+                account_status="active"
             )
         )
         self.current_user_patcher.start()
@@ -66,7 +68,10 @@ class StudentProfileSecurityTests(unittest.TestCase):
     def test_stale_student_session_is_cleared_after_role_change(self):
         self.set_session(user_id=30, role="student")
 
-        changed_user = SimpleNamespace(role="coordinator")
+        changed_user = SimpleNamespace(
+            role="coordinator",
+            account_status="active"
+        )
 
         with patch(
             "routes.student.get_session_user",
@@ -88,6 +93,28 @@ class StudentProfileSecurityTests(unittest.TestCase):
             response = self.client.get("/api/students/profile")
 
         self.assertEqual(response.status_code, 401)
+        self.assert_session_cleared()
+
+    def test_deactivated_student_session_is_cleared(self):
+        self.set_session(user_id=40, role="student")
+
+        deactivated_user = SimpleNamespace(
+            role="student",
+            account_status="deactivated"
+        )
+
+        with patch(
+            "routes.student.get_session_user",
+            return_value=deactivated_user
+        ), patch(
+            "routes.student.Student.query"
+        ) as student_query:
+
+            response = self.client.get("/api/students/profile")
+
+        self.assertEqual(response.status_code, 401)
+        self.assertEqual(response.get_json()["error"], "Not logged in")
+        student_query.filter_by.assert_not_called()
         self.assert_session_cleared()
 
     def test_student_without_profile_receives_404(self):
@@ -134,7 +161,10 @@ class StudentProfileSecurityTests(unittest.TestCase):
     def test_stale_role_cannot_create_profile(self):
         self.set_session(user_id=30, role="student")
 
-        changed_user = SimpleNamespace(role="coordinator")
+        changed_user = SimpleNamespace(
+            role="coordinator",
+            account_status="active"
+        )
 
         with patch(
             "routes.student.get_session_user",
@@ -155,7 +185,10 @@ class StudentProfileSecurityTests(unittest.TestCase):
     def test_stale_role_cannot_update_profile(self):
         self.set_session(user_id=30, role="student")
 
-        changed_user = SimpleNamespace(role="coordinator")
+        changed_user = SimpleNamespace(
+            role="coordinator",
+            account_status="active"
+        )
 
         with patch(
             "routes.student.get_session_user",
