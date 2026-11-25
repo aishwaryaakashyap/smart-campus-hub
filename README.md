@@ -176,7 +176,7 @@ Script location:
 Open a separate PowerShell terminal:
 
 ```powershell
-cd C:\Users\bg375\smart-campus-hub
+cd /path/to/smart-campus-hub
 .\.venv\Scripts\Activate.ps1
 python scripts\run_grievance_scheduler.py
 ```

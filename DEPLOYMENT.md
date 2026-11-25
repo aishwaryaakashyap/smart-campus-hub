@@ -679,3 +679,18 @@ Passing automated tests does not by itself establish production readiness.
 
 
 Production deployment requires a verified database migration plan, secure infrastructure, HTTPS, working email. Production launch should proceed only after these requirements and the pre-deployment checklist have been verified.
+
+## Public Holidays for Grievance SLA
+
+`GRIEVANCE_PUBLIC_HOLIDAYS` is an optional environment variable.
+It excludes configured public holidays from grievance SLA calculations.
+Use comma-separated dates in YYYY-MM-DD format.
+
+Example:
+
+```env
+GRIEVANCE_PUBLIC_HOLIDAYS=2027-01-26,2027-08-15,2027-10-02
+```
+
+Replace the example dates with your institution holidays.
+Invalid date values cause a configuration error.
