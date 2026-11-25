@@ -22,3 +22,4 @@ from .academic_class import AcademicClass
 from .chairperson_settings import ChairpersonSettings
 
 from .student_registration_otp import StudentRegistrationOTP
+from .activity_log import ActivityLog

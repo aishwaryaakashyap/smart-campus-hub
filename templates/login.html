@@ -289,7 +289,7 @@
             <p id="message" role="alert" aria-live="polite"></p>
 
             <p class="form-note">
-                Secure access for students, coordinators and advisors.
+                Secure access for students, coordinators, advisors and chairpersons.
             </p>
 
         </section>
@@ -350,6 +350,9 @@
 
                 } else if (data.role === "advisor") {
                     window.location.href = "/advisor/dashboard";
+
+                } else if (data.role === "chairperson") {
+                    window.location.href = "/chairperson/dashboard";
 
                 } else {
                     message.textContent = "Unknown user role.";

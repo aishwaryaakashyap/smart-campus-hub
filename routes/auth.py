@@ -163,6 +163,13 @@ def register():
             'error': 'Please provide a valid email address'
         }), 400
 
+    email_domain = raw_email.rsplit("@", 1)[-1].lower()
+
+    if email_domain != "my.students.amrita.edu":
+        return jsonify({
+            'error': 'Please use your institutional student email address ending with @my.students.amrita.edu'
+        }), 400
+
     if len(password) < 8:
         return jsonify({
             'error': 'Password must be at least 8 characters long'

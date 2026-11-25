@@ -323,6 +323,8 @@ class AcademicAdvisorAssignmentTests(unittest.TestCase):
             "routes.academic_admin.db.session.get",
             side_effect=[academic_class, active_advisor]
         ), patch(
+            "routes.academic_admin.record_activity"
+        ) as activity, patch(
             "routes.academic_admin.db.session.commit"
         ) as commit, patch(
             "routes.academic_admin.serialize_academic_class",
@@ -343,6 +345,72 @@ class AcademicAdvisorAssignmentTests(unittest.TestCase):
         )
         self.assertEqual(academic_class.advisor_user_id, 25)
         self.assertIs(academic_class.advisor, active_advisor)
+        activity.assert_called_once_with(
+            actor_user_id=1,
+            target_user_id=25,
+            action="class_advisor_assigned",
+            entity_type="academic_class",
+            entity_id=10,
+            description="Coordinator assigned Advisor 25 to academic class 10"
+        )
+        commit.assert_called_once()
+
+    def test_coordinator_can_replace_advisor_when_students_are_linked(self):
+        self.set_session()
+
+        old_advisor = self.advisor()
+        new_advisor = SimpleNamespace(
+            id=26,
+            name="Replacement Advisor",
+            email="replacement@example.com",
+            role="advisor",
+            account_status="active"
+        )
+
+        academic_class = self.academic_class()
+        academic_class.advisor_user_id = old_advisor.id
+        academic_class.advisor = old_advisor
+
+        with patch(
+            "routes.academic_admin.get_session_user",
+            return_value=self.coordinator()
+        ), patch(
+            "routes.academic_admin.db.session.get",
+            side_effect=[academic_class, new_advisor]
+        ), patch(
+            "routes.academic_admin.record_activity"
+        ) as activity, patch(
+            "routes.academic_admin.db.session.commit"
+        ) as commit, patch(
+            "routes.academic_admin.serialize_academic_class",
+            return_value={
+                "id": 10,
+                "advisor_user_id": 26
+            }
+        ):
+            response = self.client.put(
+                "/api/academic-admin/classes/10/advisor",
+                json={"advisor_user_id": 26}
+            )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.get_json()["message"],
+            "Advisor assigned successfully"
+        )
+        self.assertEqual(academic_class.advisor_user_id, 26)
+        self.assertIs(academic_class.advisor, new_advisor)
+        activity.assert_called_once_with(
+            actor_user_id=1,
+            target_user_id=26,
+            action="class_advisor_changed",
+            entity_type="academic_class",
+            entity_id=10,
+            description=(
+                "Coordinator changed Advisor for academic class 10 "
+                "from 25 to 26"
+            )
+        )
         commit.assert_called_once()
 
     def test_coordinator_can_remove_advisor_assignment(self):
@@ -359,6 +427,10 @@ class AcademicAdvisorAssignmentTests(unittest.TestCase):
             "routes.academic_admin.db.session.get",
             return_value=academic_class
         ), patch(
+            "routes.academic_admin.Student.query"
+        ) as student_query, patch(
+            "routes.academic_admin.record_activity"
+        ) as activity, patch(
             "routes.academic_admin.db.session.commit"
         ) as commit, patch(
             "routes.academic_admin.serialize_academic_class",
@@ -367,6 +439,8 @@ class AcademicAdvisorAssignmentTests(unittest.TestCase):
                 "advisor_user_id": None
             }
         ):
+            student_query.filter_by.return_value.first.return_value = None
+
             response = self.client.put(
                 "/api/academic-admin/classes/10/advisor",
                 json={"advisor_user_id": None}
@@ -379,7 +453,52 @@ class AcademicAdvisorAssignmentTests(unittest.TestCase):
         )
         self.assertIsNone(academic_class.advisor_user_id)
         self.assertIsNone(academic_class.advisor)
+        activity.assert_called_once_with(
+            actor_user_id=1,
+            target_user_id=25,
+            action="class_advisor_removed",
+            entity_type="academic_class",
+            entity_id=10,
+            description="Coordinator removed Advisor 25 from academic class 10"
+        )
         commit.assert_called_once()
+
+    def test_coordinator_cannot_remove_advisor_when_students_are_linked(self):
+        self.set_session()
+
+        academic_class = self.academic_class()
+        academic_class.advisor_user_id = 25
+        academic_class.advisor = self.advisor()
+
+        linked_student = SimpleNamespace(
+            id=101,
+            academic_class_id=10
+        )
+
+        with patch(
+            "routes.academic_admin.get_session_user",
+            return_value=self.coordinator()
+        ), patch(
+            "routes.academic_admin.db.session.get",
+            return_value=academic_class
+        ), patch(
+            "routes.academic_admin.Student.query"
+        ) as student_query, patch(
+            "routes.academic_admin.db.session.commit"
+        ) as commit:
+
+            student_query.filter_by.return_value.first.return_value = linked_student
+
+            response = self.client.put(
+                "/api/academic-admin/classes/10/advisor",
+                json={"advisor_user_id": None}
+            )
+
+        self.assertEqual(response.status_code, 409)
+        self.assertIn("linked students", response.get_json()["error"])
+        self.assertEqual(academic_class.advisor_user_id, 25)
+        self.assertIsNotNone(academic_class.advisor)
+        commit.assert_not_called()
 
     def test_database_error_rolls_back_assignment(self):
         self.set_session()

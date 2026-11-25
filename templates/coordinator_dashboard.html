@@ -694,7 +694,9 @@
             type="email"
             id="advisorEmail"
             name="email"
-            placeholder="Institutional Email Address"
+            placeholder="name@my.amrita.edu"
+            title="Use your institutional staff email ending with @my.amrita.edu"
+            pattern="[^@\s]+@my\.amrita\.edu"
             maxlength="120"
             required
           />
@@ -904,7 +906,9 @@
             type="email"
             id="chairpersonEmail"
             name="email"
-            placeholder="Institutional Email Address"
+            placeholder="name@my.amrita.edu"
+            title="Use your institutional staff email ending with @my.amrita.edu"
+            pattern="[^@\s]+@my\.amrita\.edu"
             maxlength="120"
             required
           />
@@ -2837,13 +2841,21 @@
               "cancel"
             )
           );
-        } else if (status === "deactivated") {
-          actions.append(
-            createChairpersonActionButton(
-              "Reactivate",
-              "reactivate",
-              account.id
-            ),
+        } else if (
+          status === "deactivated" ||
+          status === "rejected"
+        ) {
+          if (status === "deactivated") {
+            actions.appendChild(
+              createChairpersonActionButton(
+                "Reactivate",
+                "reactivate",
+                account.id
+              )
+            );
+          }
+
+          actions.appendChild(
             createChairpersonActionButton(
               "Delete",
               "delete",
@@ -2978,7 +2990,8 @@
 
         if (action === "delete") {
           const confirmed = window.confirm(
-            "PERMANENTLY DELETE this deactivated Chairperson account? " +
+            "PERMANENTLY DELETE this rejected or deactivated " +
+            "Chairperson account? " +
             "This action cannot be undone. Deletion will be blocked if " +
             "any database records reference this account."
           );

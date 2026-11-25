@@ -30,7 +30,7 @@ class AuthRegistrationTests(unittest.TestCase):
             '/api/auth/register',
             json={
                 'name': 'Test Student',
-                'email': 'test@example.com',
+                'email': 'test@my.students.amrita.edu',
                 'password': '123',
                 'role': 'student'
             }
@@ -142,7 +142,7 @@ class AuthRegistrationTests(unittest.TestCase):
             '/api/auth/register',
             json={
                 'name': 'Test Student',
-                'email': 'long-password@example.com',
+                'email': 'long-password@my.students.amrita.edu',
                 'password': 'P' * 200,
                 'role': 'student'
             }

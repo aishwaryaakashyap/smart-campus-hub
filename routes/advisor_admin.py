@@ -13,6 +13,7 @@ from models import AcademicClass, PasswordResetToken, Student, User
 from routes.academic_admin import require_coordinator
 from services.email_service import send_account_setup_email
 from services.notifications import create_notification
+from services.activity_log import record_activity
 
 
 advisor_admin_bp = Blueprint("advisor_admin", __name__)
@@ -205,6 +206,11 @@ def create_advisor_account():
             "error": "A valid email address is required"
         }), 400
 
+    if email.rsplit("@", 1)[1] != "my.amrita.edu":
+        return jsonify({
+            "error": "Please use your institutional staff email ending with @my.amrita.edu"
+        }), 400
+
     if User.query.filter_by(email=email).first():
         return jsonify({
             "error": "This email address is already registered"
@@ -271,6 +277,14 @@ def approve_advisor_account(advisor_id):
     advisor.rejection_reason = None
 
     try:
+        record_activity(
+            actor_user_id=session['user_id'],
+            target_user_id=advisor.id,
+            action='advisor_approved',
+            entity_type='user',
+            entity_id=advisor.id,
+            description='Coordinator approved Advisor account'
+        )
         db.session.commit()
 
     except SQLAlchemyError:
@@ -365,6 +379,14 @@ def reject_advisor_account(advisor_id):
 
     try:
         invalidate_unused_setup_tokens(advisor.id)
+        record_activity(
+            actor_user_id=session['user_id'],
+            target_user_id=advisor.id,
+            action='advisor_rejected',
+            entity_type='user',
+            entity_id=advisor.id,
+            description='Coordinator rejected Advisor account'
+        )
         db.session.commit()
 
     except SQLAlchemyError:
@@ -408,6 +430,14 @@ def deactivate_advisor_account(advisor_id):
 
     try:
         invalidate_unused_setup_tokens(advisor.id)
+        record_activity(
+            actor_user_id=session['user_id'],
+            target_user_id=advisor.id,
+            action='advisor_deactivated',
+            entity_type='user',
+            entity_id=advisor.id,
+            description='Coordinator deactivated Advisor account'
+        )
         db.session.commit()
 
     except SQLAlchemyError:
@@ -452,6 +482,14 @@ def reactivate_advisor_account(advisor_id):
     advisor.rejection_reason = None
 
     try:
+        record_activity(
+            actor_user_id=session['user_id'],
+            target_user_id=advisor.id,
+            action='advisor_reactivated',
+            entity_type='user',
+            entity_id=advisor.id,
+            description='Coordinator reactivated Advisor account'
+        )
         db.session.commit()
 
     except SQLAlchemyError:
@@ -757,6 +795,14 @@ def approve_student_registration(student_id):
     user.rejection_reason = None
 
     try:
+        record_activity(
+            actor_user_id=advisor.id,
+            target_user_id=user.id,
+            action='student_registration_approved',
+            entity_type='user',
+            entity_id=user.id,
+            description='Advisor approved student registration'
+        )
         create_notification(
             user.id,
             "Student registration approved",
@@ -843,6 +889,14 @@ def reject_student_registration(student_id):
     user.rejection_reason = reason
 
     try:
+        record_activity(
+            actor_user_id=advisor.id,
+            target_user_id=user.id,
+            action='student_registration_rejected',
+            entity_type='user',
+            entity_id=user.id,
+            description='Advisor rejected student registration'
+        )
         create_notification(
             user.id,
             "Student registration update",

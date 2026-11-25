@@ -119,6 +119,41 @@ class ApplicationValidationTests(unittest.TestCase):
                 )
                 self.assertEqual(response.status_code, 400)
 
+    def test_rejects_application_for_drive_with_blank_job_role(self):
+        drive = MagicMock(id=1, status='Open', job_role='   ')
+
+        with patch(
+            'routes.application.db.session.get',
+            return_value=drive
+        ):
+            response = self.client.post(
+                '/api/applications/',
+                json={'drive_id': 1}
+            )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(
+            response.get_json()['error'],
+            'This placement drive has an invalid job role'
+        )
+
+    def test_rejects_eligibility_check_for_drive_with_blank_job_role(self):
+        drive = MagicMock(id=1, job_role='   ')
+
+        with patch(
+            'routes.application.db.session.get',
+            return_value=drive
+        ):
+            response = self.client.get(
+                '/api/applications/check-eligibility/1'
+            )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(
+            response.get_json()['error'],
+            'This placement drive has an invalid job role'
+        )
+
     def test_duplicate_integrity_error_returns_409(self):
         drive = MagicMock(id=1, status='Open')
 

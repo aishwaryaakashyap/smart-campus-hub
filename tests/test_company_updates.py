@@ -95,7 +95,7 @@ class CompanyUpdateTests(unittest.TestCase):
         self.assertEqual(response.status_code, 403)
         get_company.assert_not_called()
 
-    def test_publishing_update_notifies_all_students(self):
+    def test_publishing_update_notifies_only_active_students(self):
         self.set_session(user_id=20, role="coordinator")
 
         company = SimpleNamespace(name="Google")
@@ -146,7 +146,7 @@ class CompanyUpdateTests(unittest.TestCase):
             message="The application deadline has been extended."
         )
 
-        user_query.filter_by.assert_called_once_with(role="student")
+        user_query.filter_by.assert_called_once_with(role="student", account_status="active")
 
         self.assertEqual(notify.call_count, 2)
         notify.assert_has_calls([

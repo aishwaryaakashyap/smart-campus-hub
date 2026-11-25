@@ -66,6 +66,23 @@ class CoordinatorGrievanceUITests(unittest.TestCase):
         self.assertIn(b"Assign advisor", response.data)
         self.assertIn(b"Update status", response.data)
 
+    def test_coordinator_page_renders_assignment_queue_filter(self):
+        self.set_session(user_id=22, role="coordinator")
+
+        coordinator = MagicMock()
+        coordinator.id = 22
+        coordinator.name = "Test Coordinator"
+        coordinator.role = "coordinator"
+        coordinator.account_status = "active"
+
+        with patch("app.db.session.get", return_value=coordinator):
+            response = self.client.get("/coordinator/grievances")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'id="assignmentFilter"', response.data)
+        self.assertIn(b'Unassigned', response.data)
+        self.assertIn(b'Assigned', response.data)
+
     def test_coordinator_page_rejects_missing_coordinator_record(self):
         self.set_session(user_id=999999, role="coordinator")
 
@@ -179,7 +196,7 @@ class CoordinatorGrievanceUITests(unittest.TestCase):
         self.assertEqual(response.status_code, 403)
         self.assertEqual(
             response.get_json()["error"],
-            "You can view only grievances assigned to you",
+            "You can view only grievances currently handled by you",
         )
 
 

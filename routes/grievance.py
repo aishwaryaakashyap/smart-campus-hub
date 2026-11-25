@@ -9,8 +9,10 @@ from models import (
     GrievanceUpdate,
     Student,
     User,
+    AcademicClass,
 )
 from services.notifications import create_notification
+from services.activity_log import record_activity
 from services.grievance_sla import calculate_sla_due_at
 
 
@@ -177,17 +179,33 @@ def submit_grievance():
             'error': 'Priority must be Low, Medium, or High'
         }), 400
 
-    try:
-        sla_due_at = calculate_sla_due_at(priority)
-    except ValueError:
-        return jsonify({
-            'error': 'Grievance SLA configuration is invalid'
-        }), 500
-
     location = data.get('location')
 
     if location is not None and not isinstance(location, str):
         return jsonify({'error': 'Location must be text'}), 400
+
+    # Resolve the student's active class Advisor, if one is assigned.
+    advisor = None
+    academic_class = None
+
+    if student.academic_class_id:
+        academic_class = db.session.get(
+            AcademicClass,
+            student.academic_class_id
+        )
+
+    if academic_class and academic_class.is_active and academic_class.advisor_user_id:
+        candidate = db.session.get(
+            User,
+            academic_class.advisor_user_id
+        )
+
+        if (
+            candidate
+            and candidate.role == User.ROLE_ADVISOR
+            and candidate.account_status == User.STATUS_ACTIVE
+        ):
+            advisor = candidate
 
     grievance = Grievance(
         student_id=student.id,
@@ -197,12 +215,27 @@ def submit_grievance():
         location=location.strip() if location and location.strip() else None,
         priority=priority,
         status='Submitted',
-        sla_due_at=sla_due_at
+        assigned_to=advisor.id if advisor else None,
+        current_handler_id=advisor.id if advisor else None,
+        current_handler_role=User.ROLE_ADVISOR if advisor else None,
+        sla_due_at=calculate_sla_due_at(priority) if advisor else None
     )
 
     try:
         db.session.add(grievance)
         db.session.flush()
+
+        if advisor:
+            create_notification(
+                user_id=advisor.id,
+                title='New Grievance Assigned to You',
+                message=(
+                    f'New grievance "{grievance.title}" '
+                    f'has been automatically assigned to you '
+                    f'based on the student\'s academic class.'
+                ),
+                notification_type='grievance'
+            )
 
         coordinators = User.query.filter_by(role='coordinator').all()
 
@@ -391,13 +424,6 @@ def reopen_grievance(grievance_id):
             'error': 'Comment must be 1000 characters or fewer'
         }), 400
 
-    try:
-        new_sla_due_at = calculate_sla_due_at(grievance.priority)
-    except ValueError:
-        return jsonify({
-            'error': 'Grievance SLA configuration is invalid'
-        }), 500
-
     old_status = grievance.status
     history = GrievanceUpdate(
         grievance_id=grievance.id,
@@ -415,15 +441,27 @@ def reopen_grievance(grievance_id):
         grievance.status = 'In Progress'
         grievance.resolution_confirmed_at = None
         grievance.reopen_count = (grievance.reopen_count or 0) + 1
-        grievance.sla_due_at = new_sla_due_at
-
-        # Return handling to the previously assigned advisor, if present.
+        # Restart the SLA only when an Advisor is assigned.
         if grievance.assigned_to:
+            try:
+                grievance.sla_due_at = calculate_sla_due_at(
+                    grievance.priority
+                )
+            except ValueError:
+                db.session.rollback()
+                return jsonify({
+                    'error': 'Grievance SLA configuration is invalid'
+                }), 500
+
             grievance.current_handler_id = grievance.assigned_to
             grievance.current_handler_role = 'advisor'
         else:
+            grievance.sla_due_at = None
             grievance.current_handler_id = None
             grievance.current_handler_role = None
+
+        grievance.escalation_level = 0
+        grievance.last_escalated_at = None
 
         db.session.add(history)
 
@@ -450,15 +488,18 @@ def reopen_grievance(grievance_id):
         'old_status': old_status,
         'status': grievance.status,
         'reopen_count': grievance.reopen_count,
-        'sla_due_at': grievance.sla_due_at.isoformat()
+        'sla_due_at': (
+            grievance.sla_due_at.isoformat()
+            if grievance.sla_due_at else None
+        )
     }), 200
 
 
 @grievance_bp.route('/manage', methods=['GET'])
 def manage_grievances():
     user_id, role, error = require_session_role(
-        ('coordinator', 'advisor'),
-        'Only coordinators and advisors can access this endpoint'
+        ('coordinator', 'advisor', 'chairperson'),
+        'Only coordinators, advisors and chairpersons can access this endpoint'
     )
     if error:
         return error
@@ -466,7 +507,17 @@ def manage_grievances():
     query = Grievance.query
 
     if role == 'advisor':
-        query = query.filter_by(assigned_to=user_id)
+        query = query.filter(
+            Grievance.assigned_to == user_id,
+            Grievance.current_handler_id == user_id,
+            Grievance.current_handler_role == User.ROLE_ADVISOR
+        )
+    elif role == 'chairperson':
+        query = query.filter(
+            Grievance.current_handler_id == user_id,
+            Grievance.current_handler_role == User.ROLE_CHAIRPERSON,
+            Grievance.escalation_level >= 1
+        )
 
     grievances = query.order_by(
         Grievance.created_at.desc()
@@ -540,12 +591,54 @@ def assign_grievance(grievance_id):
             'error': 'The selected user is not an active Advisor'
         }), 400
 
+    # An unchanged assignment must not reset the SLA or send duplicate alerts.
+    if (
+        grievance.assigned_to == advisor.id
+        and grievance.current_handler_id == advisor.id
+        and grievance.current_handler_role == advisor.role
+    ):
+        return jsonify({
+            'message': 'Grievance is already assigned to this Advisor',
+            'grievance_id': grievance.id,
+            'advisor_id': advisor.id
+        }), 200
+
+    previous_advisor_id = grievance.assigned_to
+
+
+
     try:
         # Preserve the existing advisor assignment while synchronizing
         # the Phase 16 current-handler fields.
         grievance.assigned_to = advisor.id
         grievance.current_handler_id = advisor.id
         grievance.current_handler_role = advisor.role
+        grievance.sla_due_at = calculate_sla_due_at(grievance.priority)
+        grievance.escalation_level = 0
+        grievance.last_escalated_at = None
+
+        if previous_advisor_id is None:
+            activity_action = "grievance_assigned"
+            activity_description = (
+                f"Coordinator assigned grievance {grievance.id} "
+                f"to Advisor {advisor.id}"
+            )
+        else:
+            activity_action = "grievance_transferred"
+            activity_description = (
+                f"Coordinator transferred grievance {grievance.id} "
+                f"from Advisor {previous_advisor_id} "
+                f"to Advisor {advisor.id}"
+            )
+
+        record_activity(
+            actor_user_id=user_id,
+            target_user_id=advisor.id,
+            action=activity_action,
+            entity_type="grievance",
+            entity_id=grievance.id,
+            description=activity_description
+        )
 
         create_notification(
             user_id=advisor.id,
@@ -575,8 +668,8 @@ def assign_grievance(grievance_id):
 @grievance_bp.route('/<int:grievance_id>/status', methods=['PUT'])
 def update_grievance_status(grievance_id):
     user_id, role, error = require_session_role(
-        ('coordinator', 'advisor'),
-        'Only coordinators and advisors can update status'
+        ('coordinator', 'advisor', 'chairperson'),
+        'Only coordinators, advisors and chairpersons can update status'
     )
     if error:
         return error
@@ -609,9 +702,22 @@ def update_grievance_status(grievance_id):
     if not grievance:
         return jsonify({'error': 'Grievance not found'}), 404
 
-    if role == 'advisor' and grievance.assigned_to != user_id:
+    if role == 'advisor' and not (
+        grievance.assigned_to == user_id
+        and grievance.current_handler_id == user_id
+        and grievance.current_handler_role == User.ROLE_ADVISOR
+    ):
         return jsonify({
-            'error': 'You can update only grievances assigned to you'
+            'error': 'You can update only grievances currently handled by you'
+        }), 403
+
+    if role == 'chairperson' and not (
+        grievance.current_handler_id == user_id
+        and grievance.current_handler_role == User.ROLE_CHAIRPERSON
+        and grievance.escalation_level >= 1
+    ):
+        return jsonify({
+            'error': 'You can update only grievances escalated to you'
         }), 403
 
     old_status = grievance.status
@@ -643,6 +749,7 @@ def update_grievance_status(grievance_id):
         if new_status in ('Resolved', 'Rejected'):
             grievance.current_handler_id = None
             grievance.current_handler_role = None
+            grievance.sla_due_at = None
         else:
             grievance.current_handler_id = user_id
             grievance.current_handler_role = role
@@ -737,10 +844,10 @@ def get_grievance_advisors():
 
 @grievance_bp.route('/manage/<int:grievance_id>/history', methods=['GET'])
 def get_managed_grievance_history(grievance_id):
-    """View history as a coordinator or the assigned advisor."""
+    """View history as the Coordinator or current grievance handler."""
     user_id, role, error = require_session_role(
-        ('coordinator', 'advisor'),
-        'Only coordinators and advisors can view this history'
+        ('coordinator', 'advisor', 'chairperson'),
+        'Only coordinators, advisors and chairpersons can view this history'
     )
     if error:
         return error
@@ -750,9 +857,22 @@ def get_managed_grievance_history(grievance_id):
     if not grievance:
         return jsonify({'error': 'Grievance not found'}), 404
 
-    if role == 'advisor' and grievance.assigned_to != user_id:
+    if role == 'advisor' and not (
+        grievance.assigned_to == user_id
+        and grievance.current_handler_id == user_id
+        and grievance.current_handler_role == User.ROLE_ADVISOR
+    ):
         return jsonify({
-            'error': 'You can view only grievances assigned to you'
+            'error': 'You can view only grievances currently handled by you'
+        }), 403
+
+    if role == 'chairperson' and not (
+        grievance.current_handler_id == user_id
+        and grievance.current_handler_role == User.ROLE_CHAIRPERSON
+        and grievance.escalation_level >= 1
+    ):
+        return jsonify({
+            'error': 'You can view only grievances escalated to you'
         }), 403
 
     updates = GrievanceUpdate.query.filter_by(

@@ -113,7 +113,7 @@ def test_student_cannot_manage_grievances(client):
 
     assert response.status_code == 403
     assert response.get_json()["error"] == (
-        "Only coordinators and advisors can access this endpoint"
+        "Only coordinators, advisors and chairpersons can access this endpoint"
     )
 
 
@@ -173,7 +173,10 @@ def test_student_cannot_view_another_students_grievance_history(client):
 def test_advisor_cannot_update_unassigned_grievance(client):
     grievance = MagicMock()
     grievance.id = 1
-    grievance.assigned_to = 22
+    grievance.assigned_to = 11
+    grievance.current_handler_id = 22
+    grievance.current_handler_role = "chairperson"
+    grievance.escalation_level = 1
     grievance.status = "Submitted"
 
     with client.session_transaction() as session:
@@ -191,29 +194,32 @@ def test_advisor_cannot_update_unassigned_grievance(client):
 
     assert response.status_code == 403
     assert response.get_json()["error"] == (
-        "You can update only grievances assigned to you"
+        "You can update only grievances currently handled by you"
     )
 
 
-def test_advisor_can_only_list_assigned_grievances(client):
+def test_advisor_can_only_list_currently_handled_grievances(client):
     with client.session_transaction() as session:
         session["user_id"] = 11
         session["role"] = "advisor"
 
     with patch("routes.grievance.Grievance.query") as grievance_query:
-        grievance_query.filter_by.return_value.order_by.return_value.all.return_value = []
+        grievance_query.filter.return_value.order_by.return_value.all.return_value = []
 
         response = client.get("/api/grievances/manage")
 
     assert response.status_code == 200
     assert response.get_json() == []
-    grievance_query.filter_by.assert_called_once_with(assigned_to=11)
+    grievance_query.filter.assert_called_once()
 
 
 def test_advisor_cannot_view_unassigned_grievance_history(client):
     grievance = MagicMock()
     grievance.id = 1
-    grievance.assigned_to = 22
+    grievance.assigned_to = 11
+    grievance.current_handler_id = 22
+    grievance.current_handler_role = "chairperson"
+    grievance.escalation_level = 1
 
     with client.session_transaction() as session:
         session["user_id"] = 11
@@ -227,7 +233,7 @@ def test_advisor_cannot_view_unassigned_grievance_history(client):
 
     assert response.status_code == 403
     assert response.get_json()["error"] == (
-        "You can view only grievances assigned to you"
+        "You can view only grievances currently handled by you"
     )
 
 
@@ -280,3 +286,149 @@ def test_student_cannot_access_advisor_dashboard(client):
     assert response.get_json()["error"] == (
         "Only advisors can access the advisor dashboard"
     )
+
+def test_chairperson_can_list_escalated_grievances(client):
+    with client.session_transaction() as session:
+        session["user_id"] = 22
+        session["role"] = "chairperson"
+
+    with patch("routes.grievance.Grievance.query") as grievance_query:
+        grievance_query.filter.return_value.order_by.return_value.all.return_value = []
+
+        response = client.get("/api/grievances/manage")
+
+    assert response.status_code == 200
+    assert response.get_json() == []
+    grievance_query.filter.assert_called_once()
+
+
+def test_chairperson_can_view_escalated_grievance_history(client):
+    grievance = MagicMock()
+    grievance.id = 1
+    grievance.current_handler_id = 22
+    grievance.current_handler_role = "chairperson"
+    grievance.escalation_level = 1
+
+    update = MagicMock()
+    update.old_status = "In Progress"
+    update.new_status = "Under Review"
+    update.comment = "Chairperson review"
+    update.created_at.isoformat.return_value = "2026-11-21T09:00:00"
+    update.updated_by = 22
+
+    with client.session_transaction() as session:
+        session["user_id"] = 22
+        session["role"] = "chairperson"
+
+    with patch(
+        "routes.grievance.db.session.get",
+        return_value=grievance
+    ), patch(
+        "routes.grievance.GrievanceUpdate.query"
+    ) as update_query:
+        update_query.filter_by.return_value.order_by.return_value.all.return_value = [
+            update
+        ]
+
+        response = client.get("/api/grievances/manage/1/history")
+
+    assert response.status_code == 200
+    assert response.get_json()[0]["comment"] == "Chairperson review"
+
+
+def test_chairperson_cannot_view_grievance_not_escalated_to_them(client):
+    grievance = MagicMock()
+    grievance.id = 1
+    grievance.current_handler_id = 33
+    grievance.current_handler_role = "chairperson"
+    grievance.escalation_level = 1
+
+    with client.session_transaction() as session:
+        session["user_id"] = 22
+        session["role"] = "chairperson"
+
+    with patch(
+        "routes.grievance.db.session.get",
+        return_value=grievance
+    ):
+        response = client.get("/api/grievances/manage/1/history")
+
+    assert response.status_code == 403
+    assert response.get_json()["error"] == (
+        "You can view only grievances escalated to you"
+    )
+
+def test_chairperson_can_update_grievance_escalated_to_them(client):
+    grievance = MagicMock()
+    grievance.id = 1
+    grievance.title = "Classroom maintenance"
+    grievance.status = "In Progress"
+    grievance.current_handler_id = 22
+    grievance.current_handler_role = "chairperson"
+    grievance.escalation_level = 1
+    grievance.student.user_id = 44
+
+    with client.session_transaction() as session:
+        session["user_id"] = 22
+        session["role"] = "chairperson"
+
+    with patch(
+        "routes.grievance.db.session.get",
+        return_value=grievance
+    ), patch(
+        "routes.grievance.GrievanceUpdate"
+    ) as history_factory, patch(
+        "routes.grievance.db.session.add"
+    ) as add_mock, patch(
+        "routes.grievance.db.session.commit"
+    ) as commit_mock, patch(
+        "routes.grievance.create_notification"
+    ) as notification_mock:
+        response = client.put(
+            "/api/grievances/1/status",
+            json={
+                "status": "Resolved",
+                "comment": "Issue resolved by Chairperson"
+            }
+        )
+
+    assert response.status_code == 200
+    assert grievance.status == "Resolved"
+    assert grievance.current_handler_id is None
+    assert grievance.current_handler_role is None
+    assert grievance.sla_due_at is None
+    history_factory.assert_called_once()
+    add_mock.assert_called_once()
+    commit_mock.assert_called_once()
+    notification_mock.assert_called_once()
+
+
+def test_different_chairperson_cannot_update_escalated_grievance(client):
+    grievance = MagicMock()
+    grievance.id = 1
+    grievance.status = "In Progress"
+    grievance.current_handler_id = 33
+    grievance.current_handler_role = "chairperson"
+    grievance.escalation_level = 1
+
+    with client.session_transaction() as session:
+        session["user_id"] = 22
+        session["role"] = "chairperson"
+
+    with patch(
+        "routes.grievance.db.session.get",
+        return_value=grievance
+    ), patch(
+        "routes.grievance.db.session.commit"
+    ) as commit_mock:
+        response = client.put(
+            "/api/grievances/1/status",
+            json={"status": "Resolved"}
+        )
+
+    assert response.status_code == 403
+    assert response.get_json()["error"] == (
+        "You can update only grievances escalated to you"
+    )
+    assert grievance.status == "In Progress"
+    commit_mock.assert_not_called()
